@@ -60,16 +60,17 @@ function avatarColor(tgUserId: number, name: string): string {
 }
 
 function timeoutTip(r: Conversation): string {
-  if (!r.is_active) return '';
+  if (!r.is_active) return '会话已结束';
   const s = r.conv_timeout_remaining;
-  if (s === null || s === undefined) return '永不超时';
-  if (s <= 0) return '已空闲超过对话超时';
-  if (s < 60) return '剩余不到 1 分钟';
-  if (s < 3600) return `剩余约 ${Math.ceil(s / 60)} 分钟`;
-  return `剩余约 ${Math.ceil(s / 3600)} 小时`;
+  if (s === null || s === undefined) return '对话中 · 永不超时';
+  if (s <= 0) return '对话已超时、已休眠';
+  if (s < 60) return '对话中 · 剩余不到 1 分钟';
+  if (s < 3600) return `对话中 · 剩余约 ${Math.ceil(s / 60)} 分钟`;
+  return `对话中 · 剩余约 ${Math.ceil(s / 3600)} 小时`;
 }
 
-// 状态点颜色：绿=对话中/永不超时；橙=空闲已超过对话超时（休眠）；灰=无活跃会话
+// 状态点颜色：绿=对话中（窗口内 / 永不超时）；橙=会话仍在但对话已超时休眠；
+// 灰=会话已结束（被超时连坐、访客退出、识别码失效或管理员解绑）
 function statusColor(r: Conversation): string {
   if (!r.is_active) return '#d9d9d9';
   return r.conv_timeout_remaining === 0 ? '#fa8c16' : '#52c41a';
@@ -133,7 +134,7 @@ const columns: TableColumnsType = [
     customRender: ({ record }: { record: Conversation }) => {
       const tip = timeoutTip(record);
       return h('span', {
-        title: tip || undefined,
+        title: tip,
         style: {
           display: 'inline-block',
           width: '10px',
