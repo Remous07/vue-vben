@@ -592,7 +592,8 @@ onMounted(async () => {
                 <div>
                   <label
                     style="font-size: 13px; color: hsl(var(--muted-foreground))"
-                    >主识别码</label>
+                    >主识别码</label
+                  >
                   <div style="display: flex; gap: 8px; margin-top: 6px">
                     <Input
                       v-model:value="convCodeInput"
@@ -618,7 +619,8 @@ onMounted(async () => {
               <template v-else>
                 <label
                   style="font-size: 13px; color: hsl(var(--muted-foreground))"
-                  >主识别码</label>
+                  >主识别码</label
+                >
                 <div
                   style="
                     display: flex;
@@ -677,7 +679,8 @@ onMounted(async () => {
                     font-size: 13px;
                     color: hsl(var(--muted-foreground) / 80%);
                   "
-                  >机器人</span>
+                  >机器人</span
+                >
                 <template v-if="botUsernameEdit">
                   <Input
                     v-model:value="botUsernameInput"
@@ -723,7 +726,8 @@ onMounted(async () => {
                     <span
                       v-else
                       style="color: hsl(var(--muted-foreground) / 80%)"
-                      >@未设置</span>
+                      >@未设置</span
+                    >
                     <Button
                       v-if="userInfo?.permissions?.includes('bot:settings')"
                       size="small"
@@ -851,7 +855,9 @@ onMounted(async () => {
 
       <form @submit.prevent="handleChangeEmail">
         <div style="margin-bottom: 16px">
-          <label style="font-size: 13px; color: hsl(var(--muted-foreground))">当前密码</label>
+          <label style="font-size: 13px; color: hsl(var(--muted-foreground))"
+            >当前密码</label
+          >
           <Input
             v-model:value="emailCurrentPwd"
             type="password"
@@ -862,7 +868,9 @@ onMounted(async () => {
           />
         </div>
         <div v-if="totpEnabled" style="margin-bottom: 16px">
-          <label style="font-size: 13px; color: hsl(var(--muted-foreground))">两步验证码</label>
+          <label style="font-size: 13px; color: hsl(var(--muted-foreground))"
+            >两步验证码</label
+          >
           <Input
             v-model:value="emailTotpCode"
             name="totp"
@@ -874,7 +882,9 @@ onMounted(async () => {
           />
         </div>
         <div>
-          <label style="font-size: 13px; color: hsl(var(--muted-foreground))">新邮箱</label>
+          <label style="font-size: 13px; color: hsl(var(--muted-foreground))"
+            >新邮箱</label
+          >
           <Input
             v-model:value="newEmail"
             type="email"
@@ -905,7 +915,9 @@ onMounted(async () => {
       </template>
 
       <div style="margin-bottom: 16px">
-        <label style="font-size: 13px; color: hsl(var(--muted-foreground))">当前密码</label>
+        <label style="font-size: 13px; color: hsl(var(--muted-foreground))"
+          >当前密码</label
+        >
         <Input.Password
           v-model:value="usernameCurrentPwd"
           autocomplete="current-password"
@@ -914,7 +926,9 @@ onMounted(async () => {
         />
       </div>
       <div v-if="totpEnabled" style="margin-bottom: 16px">
-        <label style="font-size: 13px; color: hsl(var(--muted-foreground))">两步验证码</label>
+        <label style="font-size: 13px; color: hsl(var(--muted-foreground))"
+          >两步验证码</label
+        >
         <Input
           v-model:value="usernameTotpCode"
           autocomplete="one-time-code"
@@ -955,7 +969,9 @@ onMounted(async () => {
       </template>
 
       <div style="margin-bottom: 16px">
-        <label style="font-size: 13px; color: hsl(var(--muted-foreground))">当前密码</label>
+        <label style="font-size: 13px; color: hsl(var(--muted-foreground))"
+          >当前密码</label
+        >
         <Input
           v-model:value="currentPwd"
           type="password"
@@ -965,7 +981,9 @@ onMounted(async () => {
         />
       </div>
       <div v-if="totpEnabled" style="margin-bottom: 16px">
-        <label style="font-size: 13px; color: hsl(var(--muted-foreground))">两步验证码</label>
+        <label style="font-size: 13px; color: hsl(var(--muted-foreground))"
+          >两步验证码</label
+        >
         <Input
           v-model:value="pwdTotpCode"
           autocomplete="one-time-code"
@@ -976,7 +994,9 @@ onMounted(async () => {
         />
       </div>
       <div>
-        <label style="font-size: 13px; color: hsl(var(--muted-foreground))">新密码</label>
+        <label style="font-size: 13px; color: hsl(var(--muted-foreground))"
+          >新密码</label
+        >
         <Input
           v-model:value="newPwd"
           type="password"
@@ -1017,7 +1037,9 @@ onMounted(async () => {
 
         <!-- Secret with copy -->
         <div style="margin-bottom: 16px">
-          <label style="font-size: 13px; color: hsl(var(--muted-foreground))">验证器密钥</label>
+          <label style="font-size: 13px; color: hsl(var(--muted-foreground))"
+            >验证器密钥</label
+          >
           <div
             style="
               display: flex;
@@ -1050,7 +1072,9 @@ onMounted(async () => {
         </div>
 
         <div style="margin-bottom: 16px">
-          <label style="font-size: 13px; color: hsl(var(--muted-foreground))">验证码</label>
+          <label style="font-size: 13px; color: hsl(var(--muted-foreground))"
+            >验证码</label
+          >
           <Input
             v-model:value="totpCode"
             autocomplete="one-time-code"
@@ -1111,7 +1135,9 @@ onMounted(async () => {
       </div>
       <form @submit.prevent="handleDeleteAccount">
         <div>
-          <label style="font-size: 13px; color: hsl(var(--muted-foreground))">请输入密码确认</label>
+          <label style="font-size: 13px; color: hsl(var(--muted-foreground))"
+            >请输入密码确认</label
+          >
           <Input
             v-model:value="deletePassword"
             type="password"
@@ -1123,7 +1149,9 @@ onMounted(async () => {
         </div>
         <template v-if="totpEnabled">
           <div style="margin-top: 12px">
-            <label style="font-size: 13px; color: hsl(var(--muted-foreground))">两步验证码</label>
+            <label style="font-size: 13px; color: hsl(var(--muted-foreground))"
+              >两步验证码</label
+            >
             <Input
               v-model:value="deleteTotpCode"
               name="totp"

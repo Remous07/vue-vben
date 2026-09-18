@@ -85,7 +85,15 @@ export async function vue(): Promise<Linter.Config[]> {
         'vue/dot-location': ['error', 'property'],
         'vue/dot-notation': ['error', { allowKeywords: true }],
         'vue/eqeqeq': ['error', 'smart'],
-        'vue/html-closing-bracket-newline': 'error',
+        // 关掉，交给 oxfmt。oxfmt 要求换行的闭合标签写成
+        //     >主识别码</label
+        //     >
+        // 而这条规则要把 > 收回同一行，两者相反。lefthook 的 pre-commit 顺序是
+        // oxlint → oxfmt → eslint → stylelint 且每步 stage_fixed，**eslint 排在
+        // oxfmt 之后、每次都把结果覆盖回去**，于是那些文件永远无法满足
+        // oxfmt --check。与下面的 vue/html-indent 同理——凡与 oxfmt 争格式的
+        // 规则都该关掉，让格式化只由一个工具负责。
+        'vue/html-closing-bracket-newline': 'off',
         'vue/html-indent': 'off',
         // 'vue/html-indent': ['error', 2],
         'vue/html-quotes': ['error', 'double'],

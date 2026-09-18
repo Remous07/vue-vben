@@ -757,7 +757,9 @@ onMounted(async () => {
       </template>
 
       <div style="margin-bottom: 16px">
-        <label style="font-size: 13px; color: hsl(var(--muted-foreground))">识别码</label>
+        <label style="font-size: 13px; color: hsl(var(--muted-foreground))"
+          >识别码</label
+        >
         <div style="display: flex; gap: 8px; margin-top: 6px">
           <Input
             v-model:value="codeInput"
@@ -806,7 +808,9 @@ onMounted(async () => {
         />
       </div>
       <div>
-        <label style="font-size: 13px; color: hsl(var(--muted-foreground))">过期时间</label>
+        <label style="font-size: 13px; color: hsl(var(--muted-foreground))"
+          >过期时间</label
+        >
         <div style="display: flex; gap: 8px; margin-top: 6px">
           <DatePicker
             v-model:value="expiresAt"
@@ -830,7 +834,9 @@ onMounted(async () => {
         </div>
       </div>
       <div style="margin-top: 16px">
-        <label style="font-size: 13px; color: hsl(var(--muted-foreground))">备注</label>
+        <label style="font-size: 13px; color: hsl(var(--muted-foreground))"
+          >备注</label
+        >
         <Input
           v-model:value="remark"
           placeholder="如：给张三的临时码"
@@ -858,7 +864,9 @@ onMounted(async () => {
       </template>
 
       <div style="margin-bottom: 16px">
-        <label style="font-size: 13px; color: hsl(var(--muted-foreground))">识别码</label>
+        <label style="font-size: 13px; color: hsl(var(--muted-foreground))"
+          >识别码</label
+        >
         <div style="display: flex; gap: 8px; margin-top: 6px">
           <Input
             v-model:value="editCode"
@@ -906,7 +914,9 @@ onMounted(async () => {
         />
       </div>
       <div>
-        <label style="font-size: 13px; color: hsl(var(--muted-foreground))">过期时间</label>
+        <label style="font-size: 13px; color: hsl(var(--muted-foreground))"
+          >过期时间</label
+        >
         <div style="display: flex; gap: 8px; margin-top: 6px">
           <DatePicker
             v-model:value="editExpiresAt"
@@ -930,7 +940,9 @@ onMounted(async () => {
         </div>
       </div>
       <div style="margin-top: 16px">
-        <label style="font-size: 13px; color: hsl(var(--muted-foreground))">备注</label>
+        <label style="font-size: 13px; color: hsl(var(--muted-foreground))"
+          >备注</label
+        >
         <Input
           v-model:value="editRemark"
           placeholder="如：给张三的临时码"
@@ -1075,11 +1087,14 @@ onMounted(async () => {
                   <span
                     v-if="r.last_active_at"
                     style="color: hsl(var(--muted-foreground) / 50%)"
-                    >·</span>
+                    >·</span
+                  >
                   <span v-if="r.last_active_at">
                     {{ dayjs(r.last_active_at).format('MM-DD HH:mm') }}
                   </span>
-                  <span style="color: hsl(var(--muted-foreground) / 50%)">·</span>
+                  <span style="color: hsl(var(--muted-foreground) / 50%)"
+                    >·</span
+                  >
                   <span>{{ r.message_count }} 条消息</span>
                 </div>
               </div>
