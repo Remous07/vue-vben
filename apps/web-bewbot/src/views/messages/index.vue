@@ -271,6 +271,23 @@ const columns: TableColumnsType = [
   { title: '操作', key: 'action', width: 100 },
 ];
 
+// Table 的横向滚动基准宽度：必须是**数值**，不能写 'max-content'。
+//
+// max-content 会让内层 <table> 拿到 width:max-content，语义就是「按内容撑开」。
+// 而本表因为有 ellipsis 列，table-layout 是 fixed——宽度不确定时它对列宽没有约束
+// 力，于是内容说了算：访客最后一条消息只要够长，整张表就会被撑到屏幕之外，「最新
+// 消息」列自己的 ellipsis 也一并失效。
+//
+// 取各列 width 之和，固定布局才会真正按列宽走。写成计算式而不是写死数字，是为了
+// 以后调列宽时不会漏改这里。
+const scrollX = computed(() =>
+  columns.reduce(
+    (sum, col) =>
+      sum + ('width' in col && typeof col.width === 'number' ? col.width : 120),
+    0,
+  ),
+);
+
 async function fetchConversations() {
   loading.value = true;
   try {
@@ -333,7 +350,7 @@ onMounted(fetchConversations);
       :columns="columns"
       :data-source="filteredConversations"
       :loading="loading"
-      :scroll="{ x: 'max-content' }"
+      :scroll="{ x: scrollX }"
       :pagination="{
         defaultPageSize: 20,
         showSizeChanger: true,
