@@ -188,7 +188,7 @@ const columns: TableColumnsType = [
     title: '用户名',
     dataIndex: 'username',
     key: 'username',
-    width: 80,
+    width: 90,
     align: 'center',
     customRender: ({ text }: { text: null | string }) =>
       text
@@ -257,14 +257,14 @@ const columns: TableColumnsType = [
     title: '最新消息',
     dataIndex: 'last_message_preview',
     key: 'last_message_preview',
-    width: 180,
+    width: 190,
     ellipsis: true,
   },
   {
     title: '最近消息时间',
     dataIndex: 'last_message_at',
     key: 'last_message_at',
-    width: 160,
+    width: 140,
     customRender: ({ text }: { text: null | string }) =>
       text ? new Date(text).toLocaleString('zh-CN') : '-',
   },
