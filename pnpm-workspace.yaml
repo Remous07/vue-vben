@@ -32,6 +32,10 @@ minimumReleaseAge: 0
 overrides:
   '@ast-grep/napi': 'catalog:'
   '@ctrl/tinycolor': 'catalog:'
+  # 必须与 vue 同版本：@vue/compiler-sfc 是 vue-router 的 peer，若它被 caret
+  # 拉到 3.5.43 而 vue 仍是 3.5.41，pnpm 会解析出两份 vue-router（peer 变体
+  # 不同），跨包使用时类型互不兼容，vue-tsc 直接报错。
+  '@vue/compiler-sfc': 'catalog:'
   clsx: 'catalog:'
   pinia: 'catalog:'
   vue: 'catalog:'
@@ -93,6 +97,7 @@ catalog:
   '@vite-pwa/vitepress': ^1.1.0
   '@vitejs/plugin-vue': ^6.0.9
   '@vitejs/plugin-vue-jsx': ^5.1.6
+  '@vue/compiler-sfc': 3.5.41
   '@vue/shared': ^3.5.40
   '@vue/test-utils': ^2.4.11
   '@vueuse/core': ^14.4.0

@@ -517,6 +517,7 @@ catalogs:
 overrides:
   '@ast-grep/napi': ^0.45.2
   '@ctrl/tinycolor': ^4.2.0
+  '@vue/compiler-sfc': 3.5.41
   clsx: ^2.1.1
   pinia: ^4.0.2
   vue: 3.5.41
@@ -843,11 +844,11 @@ importers:
         specifier: ^4.0.2
         version: 4.0.3(@vue/devtools-api@8.2.1)(typescript@6.0.3)(vue@3.5.41(typescript@6.0.3))
       vue:
-        specifier: ^3.5.40
+        specifier: 3.5.41
         version: 3.5.41(typescript@6.0.3)
       vue-router:
         specifier: 'catalog:'
-        version: 5.2.0(@vue/compiler-sfc@3.5.41)(esbuild@0.28.2)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@6.0.3)(vue@3.5.41(typescript@6.0.3)))(rolldown@1.2.5)(rollup@4.62.5)(vite@8.2.2(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.0(supports-color@10.2.2))(sass-embedded@1.103.1)(sass@1.103.1)(terser@5.50.0)(yaml@2.9.0))(vue@3.5.41(typescript@6.0.3))
+        version: 5.2.0(@vue/compiler-sfc@3.5.41)(esbuild@0.28.2)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@6.0.3)(vue@3.5.41(typescript@6.0.3)))(rolldown@1.2.9)(rollup@4.62.5)(vite@8.3.0(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.0(supports-color@10.2.2))(sass-embedded@1.103.1)(sass@1.103.1)(terser@5.50.0)(yaml@2.9.1))(vue@3.5.41(typescript@6.0.3))
 
   apps/web-ele:
     dependencies:
@@ -6218,9 +6219,6 @@ packages:
   '@vue/compiler-sfc@3.5.41':
     resolution: {integrity: sha512-XJhip7R2wy6vX3knCxdZN4KracFaZUef58s1KYewqluedHIJaPIVfXoYT7MF1F8nCvv6k8bWWxDC8opMkg1VTQ==}
 
-  '@vue/compiler-sfc@3.5.43':
-    resolution: {integrity: sha512-FCbrG3XNCRl+js3huuKx4IVHBLTvMkJhVepjbxSPu1gn4yWLaYtGNQdjJGZaMytXB6qb76qQDDmDSLy/vkmleQ==}
-
   '@vue/compiler-ssr@3.5.41':
     resolution: {integrity: sha512-U3v5OejKEGqOI0Wy0+Sz7hGuIFZHA4LSXzrNM3IMIeDyJEBBfTpX26n3SDgToRpP2bLc9FfI2j/kSgcJ8Emq5A==}
 
@@ -11299,7 +11297,7 @@ packages:
     resolution: {integrity: sha512-QAC5i0LEb1GLG0LXDQmHu8L7FX12j0KwU/JTKmLQUJMrn04gQdKP6Du+p0QwpHb3iy71vBlqnHQ8WAfOSAWhqw==}
     peerDependencies:
       '@pinia/colada': '>=0.21.2'
-      '@vue/compiler-sfc': ^3.5.34 || ^4.0.0
+      '@vue/compiler-sfc': 3.5.41
       pinia: ^4.0.2
       vite: ^7.3.0 || ^8.0.0
       vue: 3.5.41
@@ -15399,7 +15397,7 @@ snapshots:
 
   '@vue-macros/common@3.1.4(vue@3.5.41(typescript@6.0.3))':
     dependencies:
-      '@vue/compiler-sfc': 3.5.43
+      '@vue/compiler-sfc': 3.5.41
       ast-kit: 2.2.0
       local-pkg: 1.2.1
       magic-string-ast: 1.0.3
@@ -15450,7 +15448,7 @@ snapshots:
       '@babel/helper-module-imports': 7.29.7(supports-color@10.2.2)
       '@babel/helper-plugin-utils': 7.29.7
       '@babel/parser': 7.29.8
-      '@vue/compiler-sfc': 3.5.43
+      '@vue/compiler-sfc': 3.5.41
     transitivePeerDependencies:
       - supports-color
 
@@ -15461,7 +15459,7 @@ snapshots:
       '@babel/helper-module-imports': 7.29.7(supports-color@10.2.2)
       '@babel/helper-plugin-utils': 7.29.7
       '@babel/parser': 7.29.8
-      '@vue/compiler-sfc': 3.5.43
+      '@vue/compiler-sfc': 3.5.41
     transitivePeerDependencies:
       - supports-color
 
@@ -15503,18 +15501,6 @@ snapshots:
       postcss: 8.5.28
       source-map-js: 1.2.1
 
-  '@vue/compiler-sfc@3.5.43':
-    dependencies:
-      '@babel/parser': 7.29.8
-      '@vue/compiler-core': 3.5.43
-      '@vue/compiler-dom': 3.5.43
-      '@vue/compiler-ssr': 3.5.43
-      '@vue/shared': 3.5.43
-      estree-walker: 2.0.2
-      magic-string: 0.30.21
-      postcss: 8.5.28
-      source-map-js: 1.2.1
-
   '@vue/compiler-ssr@3.5.41':
     dependencies:
       '@vue/compiler-dom': 3.5.41
@@ -15524,6 +15510,7 @@ snapshots:
     dependencies:
       '@vue/compiler-dom': 3.5.43
       '@vue/shared': 3.5.43
+    optional: true
 
   '@vue/devtools-api@6.6.4': {}
 
