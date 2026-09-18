@@ -167,7 +167,7 @@ const columns: TableColumnsType = [
         : h(Tag, { color: 'green' }, () => '正常'),
   },
   {
-    title: '限频',
+    title: '静默',
     key: 'rate_limited',
     width: 120,
     align: 'center',
@@ -179,7 +179,7 @@ const columns: TableColumnsType = [
           {
             title: `剩余 ${formatRemaining(record.rate_limited_remaining ?? 0)}`,
           },
-          () => h(Tag, { color: 'red' }, () => `限频中 · ${count} 次`),
+          () => h(Tag, { color: 'red' }, () => `静默中 · ${count} 次`),
         );
       }
       return count > 0

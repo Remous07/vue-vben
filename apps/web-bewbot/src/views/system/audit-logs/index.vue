@@ -151,8 +151,10 @@ const ACTION_OPTIONS = [
     ],
   },
   {
-    label: '限频',
-    options: [{ label: '触发限频静默', value: 'rate_limit.silenced' }],
+    // 分类名跟「我的访客 / TG 用户」两页的列名保持一致；value 是后端的审计
+    // 动作名，不要跟着改。
+    label: '静默',
+    options: [{ label: '触发静默', value: 'rate_limit.silenced' }],
   },
 ];
 
