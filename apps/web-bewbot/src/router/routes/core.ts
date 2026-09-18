@@ -60,8 +60,7 @@ const coreRoutes: RouteRecordRaw[] = [
       {
         name: 'TotpVerify',
         path: 'totp-verify',
-        component: () =>
-          import('#/views/_core/authentication/totp-verify.vue'),
+        component: () => import('#/views/_core/authentication/totp-verify.vue'),
         meta: { title: '两步验证' },
       },
       {
