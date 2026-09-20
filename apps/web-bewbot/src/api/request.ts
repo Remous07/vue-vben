@@ -23,6 +23,33 @@ import { refreshTokenApi } from './core';
 
 const { apiURL } = useAppConfig(import.meta.env, import.meta.env.PROD);
 
+/**
+ * 限流（429）时把「还要等多久」补进提示文案。
+ *
+ * 后端在两步验证冷却时回了 `Retry-After`（秒），只说「请稍后再试」等于让用户自己
+ * 猜要等多久——他多半会立刻重试、再撞一次。放在拦截器里而不是各个页面：登录、
+ * 两步验证、开关两步验证都会命中同一个冷却，一处处理就全都受益。
+ *
+ * 头可能不存在（例如将来别的 429 没带），也可能不是数字；两种情况都原样返回。
+ */
+function withRetryAfter(text: string, error: unknown): string {
+  const response = (
+    error as {
+      response?: { headers?: Record<string, string>; status?: number };
+    }
+  )?.response;
+  if (response?.status !== 429) return text;
+
+  const seconds = Number(response.headers?.['retry-after']);
+  if (!Number.isFinite(seconds) || seconds <= 0) return text;
+
+  const wait =
+    seconds >= 60
+      ? `约 ${Math.ceil(seconds / 60)} 分钟后`
+      : `约 ${Math.ceil(seconds)} 秒后`;
+  return `${text}（${wait}可重试）`;
+}
+
 function createRequestClient(baseURL: string, options?: RequestClientOptions) {
   const client = new RequestClient({ ...options, baseURL });
 
@@ -88,7 +115,7 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
         responseData?.error ??
         responseData?.message ??
         '';
-      message.error(errorMessage || msg);
+      message.error(withRetryAfter(errorMessage || msg, error));
     }),
   );
 

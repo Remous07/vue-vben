@@ -28,6 +28,8 @@ const setupVisible = ref(false);
 const disableVisible = ref(false);
 const setupData = ref<null | { secret: string; uri: string }>(null);
 const verifyCode = ref('');
+// 开关两步验证都要当前密码：它和改密码/改邮箱/注销同门槛（后端 _confirm_totp_change）
+const password = ref('');
 const saving = ref(false);
 
 async function fetchStatus() {
@@ -50,12 +52,13 @@ async function handleSetup() {
 async function handleEnable() {
   saving.value = true;
   try {
-    await totpEnableApi(verifyCode.value);
+    await totpEnableApi(verifyCode.value, password.value);
     message.success('TOTP 已启用');
     setupVisible.value = false;
     enabled.value = true;
   } catch {
-    message.error('验证码错误');
+    // 失败文案由拦截器按后端的 detail 弹出（密码不对 / 验证码错误 / 尝试次数过多…）。
+    // 原来这里补一条笼统的「验证码错误」会和真实原因一起弹出、互相矛盾。
   } finally {
     saving.value = false;
   }
@@ -64,12 +67,12 @@ async function handleEnable() {
 async function handleDisable() {
   saving.value = true;
   try {
-    await totpDisableApi(verifyCode.value);
+    await totpDisableApi(verifyCode.value, password.value);
     message.success('TOTP 已关闭');
     disableVisible.value = false;
     enabled.value = false;
   } catch {
-    message.error('验证码错误');
+    // 同上
   } finally {
     saving.value = false;
   }
@@ -77,6 +80,7 @@ async function handleDisable() {
 
 function openDisable() {
   verifyCode.value = '';
+  password.value = '';
   disableVisible.value = true;
 }
 
@@ -134,6 +138,12 @@ onMounted(fetchStatus);
         >
           或手动输入密钥：<code>{{ setupData.secret }}</code>
         </p>
+        <Input.Password
+          v-model:value="password"
+          autocomplete="current-password"
+          placeholder="当前密码"
+          style="margin-bottom: 12px"
+        />
         <Input
           v-model:value="verifyCode"
           autocomplete="one-time-code"
@@ -155,6 +165,12 @@ onMounted(fetchStatus);
       @ok="handleDisable"
       :confirm-loading="saving"
     >
+      <Input.Password
+        v-model:value="password"
+        autocomplete="current-password"
+        placeholder="当前密码"
+        style="margin-bottom: 12px"
+      />
       <Input
         v-model:value="verifyCode"
         autocomplete="one-time-code"

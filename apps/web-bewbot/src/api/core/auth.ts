@@ -57,14 +57,14 @@ export async function totpSetupApi() {
   );
 }
 
-/** TOTP 启用 - 验证并开启 */
-export async function totpEnableApi(code: string) {
-  return requestClient.post('/account/totp/enable', { code });
+/** TOTP 启用 - 验证并开启（需当前密码，与关闭同门槛） */
+export async function totpEnableApi(code: string, password: string) {
+  return requestClient.post('/account/totp/enable', { code, password });
 }
 
-/** TOTP 禁用 - 验证并关闭 */
-export async function totpDisableApi(code: string) {
-  return requestClient.post('/account/totp/disable', { code });
+/** TOTP 禁用 - 验证并关闭（需当前密码） */
+export async function totpDisableApi(code: string, password: string) {
+  return requestClient.post('/account/totp/disable', { code, password });
 }
 
 /** 修改邮箱 */

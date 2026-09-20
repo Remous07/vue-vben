@@ -191,6 +191,8 @@ const totpVisible = ref(false);
 const disableVisible = ref(false);
 const setupData = ref<null | { secret: string; uri: string }>(null);
 const totpCode = ref('');
+// 开关两步验证都要当前密码：和改密码/改邮箱/注销同门槛（后端 _confirm_totp_change）
+const totpPassword = ref('');
 const savingTotp = ref(false);
 
 // Telegram binding
@@ -288,18 +290,19 @@ async function handleTotpSetup() {
   const result = await totpSetupApi();
   setupData.value = result;
   totpCode.value = '';
+  totpPassword.value = '';
   totpVisible.value = true;
 }
 
 async function handleTotpEnable() {
   savingTotp.value = true;
   try {
-    await totpEnableApi(totpCode.value);
+    await totpEnableApi(totpCode.value, totpPassword.value);
     message.success('TOTP 已启用');
     totpVisible.value = false;
     totpEnabled.value = true;
   } catch {
-    message.error('验证码错误');
+    // 失败文案由拦截器按后端的 detail 弹出（密码不对 / 验证码错误 / 尝试次数过多…）
   } finally {
     savingTotp.value = false;
   }
@@ -307,18 +310,19 @@ async function handleTotpEnable() {
 
 function openDisable() {
   totpCode.value = '';
+  totpPassword.value = '';
   disableVisible.value = true;
 }
 
 async function handleTotpDisable() {
   savingTotp.value = true;
   try {
-    await totpDisableApi(totpCode.value);
+    await totpDisableApi(totpCode.value, totpPassword.value);
     message.success('TOTP 已关闭');
     disableVisible.value = false;
     totpEnabled.value = false;
   } catch {
-    message.error('验证码错误');
+    // 同上
   } finally {
     savingTotp.value = false;
   }
@@ -1073,6 +1077,18 @@ onMounted(async () => {
 
         <div style="margin-bottom: 16px">
           <label style="font-size: 13px; color: hsl(var(--muted-foreground))"
+            >当前密码</label
+          >
+          <Input.Password
+            v-model:value="totpPassword"
+            autocomplete="current-password"
+            placeholder="当前密码"
+            style="margin-top: 6px"
+          />
+        </div>
+
+        <div style="margin-bottom: 16px">
+          <label style="font-size: 13px; color: hsl(var(--muted-foreground))"
             >验证码</label
           >
           <Input
@@ -1173,6 +1189,12 @@ onMounted(async () => {
       @ok="handleTotpDisable"
       :confirm-loading="savingTotp"
     >
+      <Input.Password
+        v-model:value="totpPassword"
+        autocomplete="current-password"
+        placeholder="当前密码"
+        style="margin-bottom: 12px"
+      />
       <Input
         v-model:value="totpCode"
         autocomplete="one-time-code"
