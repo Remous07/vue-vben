@@ -8,6 +8,7 @@ import { computed, h, onMounted, ref } from 'vue';
 import { Page } from '@vben/common-ui';
 import { IconifyIcon } from '@vben/icons';
 import { usePreferences } from '@vben/preferences';
+import { useAccessStore } from '@vben/stores';
 
 import {
   AutoComplete,
@@ -52,6 +53,13 @@ import {
 defineOptions({ name: 'InviteCodes' });
 
 const { isDark, isMobile } = usePreferences();
+
+// 「查看该邀请码的注册者」拉的是**管理员账号**数据（含邮箱），后端要 admin:view；
+// 本页本身只要 invite:view。默认角色里 operator 正是「有 invite:view、没有
+// admin:view」这种情况——不在这里一并判断，它就会看到一个点了报 403 的死按钮。
+// 与 views/users 里同一套判断方式保持一致。
+const accessStore = useAccessStore();
+const hasAdminView = accessStore.accessCodes?.includes('admin:view') ?? false;
 
 const codes = ref<InviteCodeItem[]>([]);
 const loading = ref(false);
@@ -443,7 +451,8 @@ const columns: TableColumnsType = [
     key: 'usage',
     width: 220,
     customRender: ({ record }: { record: InviteCodeItem }) => {
-      const canClick = record.used_count > 0;
+      // 没有 admin:view 就不给入口：数字照常显示，只是点不开
+      const canClick = record.used_count > 0 && hasAdminView;
       if (record.max_uses <= 0)
         return canClick
           ? h(
