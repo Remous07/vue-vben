@@ -10,6 +10,7 @@ import { computed, h, onMounted, ref } from 'vue';
 import { Page } from '@vben/common-ui';
 import { IconifyIcon } from '@vben/icons';
 import { usePreferences } from '@vben/preferences';
+import { useAccessStore } from '@vben/stores';
 
 import {
   Button,
@@ -44,6 +45,13 @@ import {
 defineOptions({ name: 'AuditLogs' });
 
 const { isDark } = usePreferences();
+
+// 本页的「读」是 audit:view（进得来就有），「毁」另算 audit:manage：清空两张表
+// 和改保留天数都是销毁性操作。后端已经按这个分开了，这里同步把控件收起来——
+// 否则只读审计员会看到按钮、点下去才吃 403。
+const accessStore = useAccessStore();
+const hasAuditManage =
+  accessStore.accessCodes?.includes('audit:manage') ?? false;
 
 const ACTION_OPTIONS = [
   {
@@ -605,7 +613,12 @@ onMounted(() => {
           >
             操作记录保留
           </span>
-          <InputNumber v-model:value="auditDays" :min="1" :max="3650" />
+          <InputNumber
+            v-model:value="auditDays"
+            :min="1"
+            :max="3650"
+            :disabled="!hasAuditManage"
+          />
           <span
             :style="{
               fontSize: '13px',
@@ -624,7 +637,12 @@ onMounted(() => {
           >
             运行日志保留
           </span>
-          <InputNumber v-model:value="logDays" :min="1" :max="3650" />
+          <InputNumber
+            v-model:value="logDays"
+            :min="1"
+            :max="3650"
+            :disabled="!hasAuditManage"
+          />
           <span
             :style="{
               fontSize: '13px',
@@ -635,12 +653,23 @@ onMounted(() => {
           </span>
         </Space>
         <Button
+          v-if="hasAuditManage"
           type="primary"
           :loading="savingRetention"
           @click="saveRetention"
         >
           保存
         </Button>
+      </div>
+      <div
+        v-if="!hasAuditManage"
+        :style="{
+          marginTop: '8px',
+          fontSize: '12px',
+          color: isDark ? '#94a3b8' : '#999',
+        }"
+      >
+        当前账号仅有查看权限，修改保留策略需要「管理审计数据」权限。
       </div>
     </Card>
 
@@ -689,7 +718,7 @@ onMounted(() => {
             <Button @click="onOpReset">重置</Button>
           </Space>
           <!-- 用普通 span 承载右对齐 margin：antd Popconfirm 不一定把 style 透传给 flex 项 -->
-          <span style="margin-left: auto">
+          <span v-if="hasAuditManage" style="margin-left: auto">
             <Popconfirm
               title="确定清空全部操作记录？"
               description="此操作不可恢复"
@@ -766,7 +795,7 @@ onMounted(() => {
             <Button type="primary" @click="onLogSearch">查询</Button>
           </Space>
           <!-- 用普通 span 承载右对齐 margin：antd Popconfirm 不一定把 style 透传给 flex 项 -->
-          <span style="margin-left: auto">
+          <span v-if="hasAuditManage" style="margin-left: auto">
             <Popconfirm
               title="确定清空全部运行日志？"
               description="此操作不可恢复"
