@@ -188,6 +188,14 @@ export async function forgotPasswordApi(data: {
   return requestClient.post('/auth/forgot-password', data);
 }
 
+/** 重发验证邮件 */
+export async function resendVerificationApi(data: {
+  email: string;
+  turnstile_token?: string;
+}) {
+  return requestClient.post('/auth/resend-verification', data);
+}
+
 /** 重置密码 */
 export async function resetPasswordApi(data: {
   new_password: string;

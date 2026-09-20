@@ -22,6 +22,11 @@ const sent = ref(false);
 const sentEmail = ref('');
 const resending = ref(false);
 
+// 「重新发送」单独用一道人机验证：Turnstile 的 token 是一次性的，
+// 首发的那个已经用掉了，这里必须让用户重新过一遍。
+const resendToken = ref('');
+const resendWidgetRef = ref<InstanceType<typeof TurnstileWidget>>();
+
 const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || '';
 
 const [Form, formApi] = useVbenForm({
@@ -68,16 +73,26 @@ async function handleSubmit() {
 
 async function handleResend() {
   if (!sentEmail.value) return;
+
+  if (siteKey && !resendToken.value) {
+    message.warning('请完成人机验证');
+    return;
+  }
+
   resending.value = true;
   try {
     await forgotPasswordApi({
       email: sentEmail.value,
-      turnstile_token: undefined,
+      turnstile_token: resendToken.value || undefined,
     });
     message.success('重置邮件已重新发送');
   } catch {
     // error handled by interceptor
   } finally {
+    // 无论成败都换一道新题：token 可能已经被服务端消费掉（一次性的），
+    // 留着它只会让用户下一次点击必然失败。reset 之后要到下次 verified 才有新值。
+    resendToken.value = '';
+    resendWidgetRef.value?.reset();
     resending.value = false;
   }
 }
@@ -133,6 +148,16 @@ async function handleResend() {
       </div>
 
       <div class="mt-6 space-y-3">
+        <div v-if="siteKey" class="flex justify-center">
+          <TurnstileWidget
+            ref="resendWidgetRef"
+            :site-key="siteKey"
+            @error="resendToken = ''"
+            @expired="resendToken = ''"
+            @verified="(t: string) => (resendToken = t)"
+          />
+        </div>
+
         <VbenButton
           :loading="resending"
           class="w-full"

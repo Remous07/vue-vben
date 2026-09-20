@@ -9,8 +9,7 @@ import { VbenButton } from '@vben-core/shadcn-ui';
 
 import { message } from 'ant-design-vue';
 
-import { getRegistrationStatusApi } from '#/api/core';
-import { requestClient } from '#/api/request';
+import { getRegistrationStatusApi, resendVerificationApi } from '#/api/core';
 import TurnstileWidget from '#/components/TurnstileWidget.vue';
 import { useAuthStore } from '#/store';
 
@@ -39,6 +38,10 @@ const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || '';
 const registered = ref(false);
 const registeredEmail = ref('');
 const resending = ref(false);
+
+// 重发走自己那道人机验证：注册时用的 token 是一次性的，已经用掉了。
+const resendToken = ref('');
+const resendWidgetRef = ref<InstanceType<typeof TurnstileWidget>>();
 
 const [Form, formApi] = useVbenForm({
   commonConfig: { hideLabel: true, hideRequiredMark: true },
@@ -131,15 +134,26 @@ async function handleSubmit() {
 }
 
 async function handleResendVerification() {
+  if (!registeredEmail.value) return;
+
+  if (siteKey && !resendToken.value) {
+    message.warning('请完成人机验证');
+    return;
+  }
+
   resending.value = true;
   try {
-    await requestClient.post('/auth/resend-verification', {
+    await resendVerificationApi({
       email: registeredEmail.value,
+      turnstile_token: resendToken.value || undefined,
     });
     message.success('验证邮件已重新发送');
   } catch {
     // error handled by interceptor
   } finally {
+    // 无论成败都换一道新题：token 可能已经被服务端消费掉了，留着它下次必然失败。
+    resendToken.value = '';
+    resendWidgetRef.value?.reset();
     resending.value = false;
   }
 }
@@ -196,6 +210,16 @@ async function handleResendVerification() {
       </div>
 
       <div class="mt-6 space-y-3">
+        <div v-if="siteKey" class="flex justify-center">
+          <TurnstileWidget
+            ref="resendWidgetRef"
+            :site-key="siteKey"
+            @error="resendToken = ''"
+            @expired="resendToken = ''"
+            @verified="(t: string) => (resendToken = t)"
+          />
+        </div>
+
         <VbenButton
           :loading="resending"
           class="w-full"
