@@ -13,6 +13,7 @@ import { Card, Col, Row } from 'ant-design-vue';
 
 import { getAllMenusApi } from '#/api/core/menu';
 import { requestClient } from '#/api/request';
+import { beijingToday } from '#/utils/datetime';
 
 defineOptions({ name: 'Dashboard' });
 
@@ -29,12 +30,9 @@ const { isDark } = usePreferences();
 
 const username = computed(() => userStore.userInfo?.username || '管理员');
 
-const today = new Date().toLocaleDateString('zh-CN', {
-  weekday: 'long',
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-});
+// 北京时间的一天。跟着浏览器走的话，非东八区的同事会在北京时间的清早看到前一天的
+// 日期，而旁边那张「今日操作」统计卡的却是北京的今天。
+const today = beijingToday();
 
 const stats = ref<Stats>({
   user_count: 0,

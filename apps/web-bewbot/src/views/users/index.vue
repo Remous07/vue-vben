@@ -26,6 +26,7 @@ import {
 
 import { getAdminUserApi } from '#/api/core';
 import { requestClient } from '#/api/request';
+import { formatBeijingDateTime } from '#/utils/datetime';
 
 defineOptions({ name: 'UserManagement' });
 
@@ -196,8 +197,7 @@ const columns: TableColumnsType = [
     dataIndex: 'created_at',
     key: 'created_at',
     width: 170,
-    customRender: ({ text }: { text: string }) =>
-      new Date(text).toLocaleString('zh-CN'),
+    customRender: ({ text }: { text: string }) => formatBeijingDateTime(text),
   },
   { title: '操作', key: 'action', width: 220 },
 ];
@@ -518,7 +518,7 @@ onMounted(fetchUsers);
           <Descriptions.Item label="注册时间">
             {{
               adminModalUser.created_at
-                ? new Date(adminModalUser.created_at).toLocaleString('zh-CN')
+                ? formatBeijingDateTime(adminModalUser.created_at)
                 : '-'
             }}
           </Descriptions.Item>

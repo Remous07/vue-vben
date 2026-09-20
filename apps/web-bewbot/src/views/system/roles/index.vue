@@ -30,6 +30,7 @@ import {
   getSystemSettingsBatchApi,
   updateRoleApi,
 } from '#/api/core';
+import { formatBeijingDateTime } from '#/utils/datetime';
 
 defineOptions({ name: 'RoleManagement' });
 
@@ -240,7 +241,7 @@ const columns: TableColumnsType = [
     key: 'created_at',
     width: 180,
     customRender: ({ text }: { text: null | string }) =>
-      text ? new Date(text).toLocaleString('zh-CN') : '-',
+      formatBeijingDateTime(text),
   },
   { title: '操作', key: 'action', width: 180 },
 ];

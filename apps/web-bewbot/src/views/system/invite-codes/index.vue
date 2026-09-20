@@ -49,6 +49,7 @@ import {
   setSystemSettingApi,
   testUsernameAuditApi,
 } from '#/api/core';
+import { formatBeijingDateTime } from '#/utils/datetime';
 
 defineOptions({ name: 'InviteCodes' });
 
@@ -526,7 +527,7 @@ const columns: TableColumnsType = [
       const pct = Math.round((elapsed / total) * 100);
       const remaining = Math.max(0, expires - now);
       const days = Math.round(remaining / 86_400_000);
-      const fullDate = new Date(record.expires_at).toLocaleString('zh-CN');
+      const fullDate = formatBeijingDateTime(record.expires_at);
       let strokeColor: string;
       if (pct >= 90) strokeColor = '#f5222d';
       else if (pct >= 70) strokeColor = '#fa8c16';
@@ -562,7 +563,7 @@ const columns: TableColumnsType = [
     key: 'created_at',
     width: 150,
     customRender: ({ text }: { text: null | string }) =>
-      text ? new Date(text).toLocaleString('zh-CN') : '-',
+      formatBeijingDateTime(text),
     sorter: (a: InviteCodeItem, b: InviteCodeItem) =>
       new Date(a.created_at || 0).getTime() -
       new Date(b.created_at || 0).getTime(),
@@ -1228,7 +1229,7 @@ onMounted(fetchData);
                 >
                   {{ r.email }}
                   <span v-if="r.created_at" style="margin-left: 12px">
-                    {{ new Date(r.created_at).toLocaleString('zh-CN') }}
+                    {{ formatBeijingDateTime(r.created_at) }}
                   </span>
                 </div>
               </div>

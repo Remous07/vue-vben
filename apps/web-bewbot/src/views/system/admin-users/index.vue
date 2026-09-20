@@ -32,6 +32,7 @@ import {
   getRolesApi,
   unbanAdminUserApi,
 } from '#/api/core';
+import { formatBeijingDateTime } from '#/utils/datetime';
 
 defineOptions({ name: 'AdminUsers' });
 
@@ -215,7 +216,7 @@ const columns: TableColumnsType = [
     key: 'created_at',
     width: 170,
     customRender: ({ text }: { text: null | string }) =>
-      text ? new Date(text).toLocaleString('zh-CN') : '-',
+      formatBeijingDateTime(text),
   },
   { title: '操作', key: 'action', width: 160 },
 ];
@@ -489,7 +490,7 @@ onMounted(fetchData);
         <Descriptions.Item label="绑定时间">
           {{
             botModalUser.bound_at
-              ? new Date(botModalUser.bound_at).toLocaleString('zh-CN')
+              ? formatBeijingDateTime(botModalUser.bound_at)
               : '-'
           }}
         </Descriptions.Item>

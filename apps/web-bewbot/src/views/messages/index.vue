@@ -22,6 +22,7 @@ import {
 
 import { blockVisitorApi, unblockVisitorApi } from '#/api/core';
 import { requestClient } from '#/api/request';
+import { formatBeijingDateTime } from '#/utils/datetime';
 
 defineOptions({ name: 'MessageHistory' });
 
@@ -266,7 +267,7 @@ const columns: TableColumnsType = [
     key: 'last_message_at',
     width: 140,
     customRender: ({ text }: { text: null | string }) =>
-      text ? new Date(text).toLocaleString('zh-CN') : '-',
+      formatBeijingDateTime(text),
   },
   { title: '操作', key: 'action', width: 100 },
 ];

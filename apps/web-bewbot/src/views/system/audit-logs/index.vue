@@ -41,6 +41,7 @@ import {
   getRuntimeLogsApi,
   setAuditRetentionApi,
 } from '#/api/core';
+import { formatBeijingDateTime } from '#/utils/datetime';
 
 import { rangeBound } from './range-bound';
 
@@ -559,19 +560,6 @@ function loadMoreLogs() {
   fetchLogs(false);
 }
 
-// 后端返回的时间戳带 +08:00（见 audit.py 的 _beijing_iso）。这里**显式按东八区
-// 渲染**，而不是交给浏览器本地时区：这张表的时间语义全站统一是北京时间（统计卡的
-// 「今日」、保留天数的清理都按北京时间的一天算），跟着浏览器走会和这两处对不上。
-//
-// 顺带说明为什么以前没换时区也没出错：老接口发的是不带偏移的串，JS 按**本地时区**
-// 解析，toLocaleString 又按本地渲染，墙上时间原样往返——显示恰好是对的，但那是
-// 解析规则的巧合，不是约定。现在两端都写明了，换谁来读都不会偏。
-function formatTime(v: null | string): string {
-  return v
-    ? new Date(v).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })
-    : '-';
-}
-
 onMounted(() => {
   fetchStats();
   fetchRetention();
@@ -767,7 +755,9 @@ onMounted(() => {
         >
           <template #bodyCell="{ column, record }">
             <template v-if="column.key === 'time'">
-              {{ formatTime((record as AuditOperationItem).created_at) }}
+              {{
+                formatBeijingDateTime((record as AuditOperationItem).created_at)
+              }}
             </template>
             <template v-else-if="column.key === 'detail'">
               <Tooltip
@@ -836,7 +826,7 @@ onMounted(() => {
         >
           <template #bodyCell="{ column, record }">
             <template v-if="column.key === 'time'">
-              {{ formatTime((record as RuntimeLogItem).created_at) }}
+              {{ formatBeijingDateTime((record as RuntimeLogItem).created_at) }}
             </template>
             <template v-else-if="column.key === 'message'">
               <Tooltip :title="(record as RuntimeLogItem).message">

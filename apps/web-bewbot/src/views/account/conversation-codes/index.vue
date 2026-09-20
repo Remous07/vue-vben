@@ -49,6 +49,7 @@ import {
   setConversationCodeApi,
   unblockVisitorApi,
 } from '#/api/core';
+import { formatBeijingDateTime, formatBeijingShort } from '#/utils/datetime';
 
 defineOptions({ name: 'ConversationCodes' });
 
@@ -315,7 +316,7 @@ const columns: TableColumnsType = [
       const pct = Math.round((elapsed / total) * 100);
       const remaining = Math.max(0, expires - now);
       const days = Math.round(remaining / 86_400_000);
-      const fullDate = new Date(record.expires_at).toLocaleString('zh-CN');
+      const fullDate = formatBeijingDateTime(record.expires_at);
       let strokeColor: string;
       if (pct >= 90) strokeColor = '#f5222d';
       else if (pct >= 70) strokeColor = '#fa8c16';
@@ -344,7 +345,7 @@ const columns: TableColumnsType = [
     key: 'created_at',
     width: 180,
     customRender: ({ text }: { text: null | string }) =>
-      text ? new Date(text).toLocaleString('zh-CN') : '-',
+      formatBeijingDateTime(text),
   },
   { title: '操作', key: 'action', width: 220 },
 ];
@@ -1090,7 +1091,7 @@ onMounted(async () => {
                     >·</span
                   >
                   <span v-if="r.last_active_at">
-                    {{ dayjs(r.last_active_at).format('MM-DD HH:mm') }}
+                    {{ formatBeijingShort(r.last_active_at) }}
                   </span>
                   <span style="color: hsl(var(--muted-foreground) / 50%)"
                     >·</span
