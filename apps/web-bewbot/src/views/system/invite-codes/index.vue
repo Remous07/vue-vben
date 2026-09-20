@@ -1035,6 +1035,7 @@ onMounted(fetchData);
         >
         <Input
           v-model:value="remark"
+          :maxlength="256"
           placeholder="可选"
           style="margin-top: 6px"
         />
@@ -1147,6 +1148,7 @@ onMounted(fetchData);
         >
         <Input
           v-model:value="editRemark"
+          :maxlength="256"
           placeholder="可选"
           style="margin-top: 6px"
         />

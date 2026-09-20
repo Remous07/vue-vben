@@ -419,6 +419,7 @@ onMounted(fetchData);
         <label :style="dimTextStyle">备注</label>
         <Input.TextArea
           v-model:value="formRemark"
+          :maxlength="256"
           placeholder="角色说明"
           :rows="2"
           style="margin-top: 6px"
