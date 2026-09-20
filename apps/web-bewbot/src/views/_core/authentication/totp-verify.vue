@@ -5,8 +5,6 @@ import { useRouter } from 'vue-router';
 import { useVbenForm, z } from '@vben-core/form-ui';
 import { VbenButton } from '@vben-core/shadcn-ui';
 
-import { message } from 'ant-design-vue';
-
 import { useAuthStore } from '#/store';
 
 defineOptions({ name: 'TotpVerify' });
@@ -42,8 +40,18 @@ async function handleSubmit() {
   try {
     const values = await formApi.getValues();
     await authStore.authLoginTotp(values.code);
-  } catch {
-    message.error('验证码错误');
+  } catch (error) {
+    // 失败文案统一由拦截器按后端的 detail 弹出（「两步验证码错误」/「验证尝试次数
+    // 过多…」），这里不再补一条笼统的「验证码错误」——那会和真实原因一起弹出、
+    // 互相矛盾，用户按提示重试也永远不成功。
+    //
+    // 只额外处理一种情况：后端限流（401 令牌额度用尽 / 429 账号冷却）。这两类
+    // 都不是「码输错了」，留在本页重试没有意义，回登录页重新走密码 + 人机验证。
+    const status = (error as { response?: { status?: number } })?.response
+      ?.status;
+    if (status === 401 || status === 429) {
+      await router.push('/auth/login');
+    }
   } finally {
     loading.value = false;
   }
