@@ -23,7 +23,10 @@ import {
 import { $t } from '#/locales';
 
 // 持久化最近一次登录的系统用户名：页面刷新后 userStore.userInfo 为空，
-// token 过期自动登出时用它兜底传给后端，审计记录才能显示操作人。
+// token 过期自动登出时用它兜底传给后端。
+//
+// 注意后端把它记进审计的**详情**、不是「操作人」列：这条路没有可验签的令牌，
+// 谁都能带任意字符串来调，所以它不能进身份字段。详情列一样看得到，只是标明是自述。
 const LAST_USERNAME_KEY = 'bewbot:last-username';
 
 function persistUsername(username: string | undefined) {
