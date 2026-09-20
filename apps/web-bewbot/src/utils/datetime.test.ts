@@ -4,6 +4,8 @@ import {
   beijingToday,
   formatBeijingDateTime,
   formatBeijingShort,
+  formatViewerLocal,
+  viewerUsesBeijingClock,
 } from './datetime';
 
 // 这些用例**在哪个时区跑都必须过**——那正是被测的东西。
@@ -73,5 +75,44 @@ describe('空值', () => {
     expect(formatBeijingDateTime(null)).toBe('-');
     // 模板里直接插值用，空串比 "-" 干净
     expect(formatBeijingShort(undefined)).toBe('');
+    expect(formatViewerLocal(undefined)).toBe('');
+  });
+});
+
+describe.each(TIMEZONES)('悬停提示（%s）', (tz) => {
+  beforeEach(() => {
+    process.env.TZ = tz;
+  });
+
+  it('本地的渲染跟着时区走，北京的渲染不跟', () => {
+    const value = '2026-09-20T14:30:00+08:00';
+    // 北京的一律不变
+    expect(formatBeijingDateTime(value)).toBe('2026/9/20 14:30:00');
+    // 本地的按各自时区：只有东八区那两个时刻相同
+    const expectedLocal = new Date(value).toLocaleString('zh-CN');
+    expect(formatViewerLocal(value)).toContain(expectedLocal);
+  });
+
+  it('在东八区就不该弹提示，别的地方才弹', () => {
+    expect(viewerUsesBeijingClock()).toBe(tz === 'Asia/Shanghai');
+  });
+
+  it('提示里带时区名，且是一个真实的偏移', () => {
+    const hint = formatViewerLocal('2026-09-20T14:30:00+08:00');
+    // 形如 `2026/9/20 02:30:00（GMT-4）`
+    expect(hint).toMatch(/（.+）$/);
+  });
+});
+
+describe('偏移量判断的两个边界', () => {
+  it('同为 +08:00 的其他地区也不需要提示（数字完全一样）', () => {
+    // 新加坡全年 +8、没有夏令时，和北京看到的墙上时间一致
+    process.env.TZ = 'Asia/Singapore';
+    expect(viewerUsesBeijingClock()).toBe(true);
+  });
+
+  it('+09:00 就开始需要了', () => {
+    process.env.TZ = 'Asia/Tokyo';
+    expect(viewerUsesBeijingClock()).toBe(false);
   });
 });

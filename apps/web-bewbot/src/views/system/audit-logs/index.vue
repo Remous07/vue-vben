@@ -41,7 +41,11 @@ import {
   getRuntimeLogsApi,
   setAuditRetentionApi,
 } from '#/api/core';
-import { formatBeijingDateTime } from '#/utils/datetime';
+import {
+  formatBeijingDateTime,
+  formatViewerLocal,
+  viewerUsesBeijingClock,
+} from '#/utils/datetime';
 
 import { rangeBound } from './range-bound';
 
@@ -55,6 +59,10 @@ const { isDark } = usePreferences();
 const accessStore = useAccessStore();
 const hasAuditManage =
   accessStore.accessCodes?.includes('audit:manage') ?? false;
+
+// 访问者不在东八区时才给时间加悬停提示。只算一次：改系统时区要刷新页面才生效，
+// 这是可接受的（提示只是锦上添花，不参与任何判断）。
+const showLocalHint = !viewerUsesBeijingClock();
 
 const ACTION_OPTIONS = [
   {
@@ -755,9 +763,25 @@ onMounted(() => {
         >
           <template #bodyCell="{ column, record }">
             <template v-if="column.key === 'time'">
-              {{
-                formatBeijingDateTime((record as AuditOperationItem).created_at)
-              }}
+              <!-- 表格里永远是北京时间（审计要有个人人一致的基准）；
+                   人在境外时悬停看他/她那边的时刻。东八区访问者不多这一层。 -->
+              <Tooltip
+                v-if="showLocalHint"
+                :title="`你那边：${formatViewerLocal((record as AuditOperationItem).created_at)}`"
+              >
+                <span>{{
+                  formatBeijingDateTime(
+                    (record as AuditOperationItem).created_at,
+                  )
+                }}</span>
+              </Tooltip>
+              <template v-else>
+                {{
+                  formatBeijingDateTime(
+                    (record as AuditOperationItem).created_at,
+                  )
+                }}
+              </template>
             </template>
             <template v-else-if="column.key === 'detail'">
               <Tooltip
@@ -826,7 +850,21 @@ onMounted(() => {
         >
           <template #bodyCell="{ column, record }">
             <template v-if="column.key === 'time'">
-              {{ formatBeijingDateTime((record as RuntimeLogItem).created_at) }}
+              <!-- 表格里永远是北京时间（审计要有个人人一致的基准）；
+                   人在境外时悬停看他/她那边的时刻。东八区访问者不多这一层。 -->
+              <Tooltip
+                v-if="showLocalHint"
+                :title="`你那边：${formatViewerLocal((record as RuntimeLogItem).created_at)}`"
+              >
+                <span>{{
+                  formatBeijingDateTime((record as RuntimeLogItem).created_at)
+                }}</span>
+              </Tooltip>
+              <template v-else>
+                {{
+                  formatBeijingDateTime((record as RuntimeLogItem).created_at)
+                }}
+              </template>
             </template>
             <template v-else-if="column.key === 'message'">
               <Tooltip :title="(record as RuntimeLogItem).message">

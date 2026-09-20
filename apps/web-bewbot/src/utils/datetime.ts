@@ -64,3 +64,44 @@ export function beijingToday(): string {
     year: 'numeric',
   });
 }
+
+// ── 给非东八区的访问者：悬停看他/她那边的时刻 ──────────
+//
+// 表格里**永远**显示北京时间——审计得有个所有人一致的基准，否则「我看到 14:30
+// 那条」在不同人嘴里指的不是同一行。但人在境外时要自己心算时差，也确实是负担。
+//
+// 所以不做「跟随浏览器」（那种做法会让同一行在不同人屏幕上显示两个数字），也不做
+// 需要人去选的开关，而是在**已经显示北京时间的基础上**补一个悬停提示。默认情况下
+// （访问者就在东八区）什么都不多出来。
+
+/**
+ * 访问者本地时区的渲染 + 时区简称，给悬停提示用。
+ *
+ * 例：``2026/9/20 02:30:00（GMT-4）``。时区简称走 ``Intl``，不写死。
+ */
+export function formatViewerLocal(value: null | string | undefined): string {
+  if (!value) {
+    return '';
+  }
+  const at = new Date(value);
+  const local = at.toLocaleString('zh-CN'); // 不传 timeZone = 浏览器本地
+  const zone = new Intl.DateTimeFormat('zh-CN', { timeZoneName: 'short' })
+    .formatToParts(at)
+    .find((part) => part.type === 'timeZoneName')?.value;
+  return zone ? `${local}（${zone}）` : local;
+}
+
+/**
+ * 访问者的**墙上时间**是不是就是北京时间（那就没必要弹悬停提示）。
+ *
+ * 比的是**偏移量**而不是时区名：偏移一样就说明显示的数字一样。新加坡、珀斯、
+ * 伊尔库茨克都是 +08:00，和北京看到的完全相同——它们不需要这个提示。
+ *
+ * 用「此刻」的偏移来判断：北京没有夏令时，所以这个判断对北京时间永远准。别的时区
+ * 在夏令时切换前后偏移会变，但那只影响「要不要弹提示」这个决定，提示里的内容是按
+ * 每个时刻各自算的，不受影响。
+ */
+export function viewerUsesBeijingClock(): boolean {
+  const BEIJING_OFFSET_MINUTES = 8 * 60;
+  return -new Date().getTimezoneOffset() === BEIJING_OFFSET_MINUTES;
+}
