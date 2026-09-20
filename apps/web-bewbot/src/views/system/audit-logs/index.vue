@@ -42,6 +42,8 @@ import {
   setAuditRetentionApi,
 } from '#/api/core';
 
+import { rangeBound } from './range-bound';
+
 defineOptions({ name: 'AuditLogs' });
 
 const { isDark } = usePreferences();
@@ -199,10 +201,6 @@ function actionColor(action: string): string {
     return 'cyan';
   }
   return 'default';
-}
-
-function toLocalIso(d?: dayjs.Dayjs): string | undefined {
-  return d ? d.format('YYYY-MM-DDTHH:mm:ss') : undefined;
 }
 
 function flagEmoji(code: null | string): string {
@@ -381,7 +379,12 @@ function withIcon(icon: string, text: string) {
 }
 
 const opColumns = [
-  { title: '时间', dataIndex: 'created_at', key: 'time', width: 180 },
+  {
+    title: '时间（北京时间）',
+    dataIndex: 'created_at',
+    key: 'time',
+    width: 200,
+  },
   {
     title: '操作人',
     dataIndex: 'admin_username',
@@ -459,8 +462,8 @@ async function fetchOperations() {
       action: opAction.value,
       admin_username: opUsername.value.trim() || undefined,
       ua_device: opDevice.value,
-      start: toLocalIso(opRange.value?.[0]),
-      end: toLocalIso(opRange.value?.[1]),
+      start: rangeBound(opRange.value?.[0], 'start'),
+      end: rangeBound(opRange.value?.[1], 'end'),
     });
     operations.value = resp.items;
     opTotal.value = resp.total;
@@ -509,7 +512,12 @@ const logLevel = ref<string | undefined>(undefined);
 const logRange = ref<[dayjs.Dayjs, dayjs.Dayjs] | undefined>(undefined);
 
 const logColumns = [
-  { title: '时间', dataIndex: 'created_at', key: 'time', width: 180 },
+  {
+    title: '时间（北京时间）',
+    dataIndex: 'created_at',
+    key: 'time',
+    width: 200,
+  },
   {
     title: '级别',
     dataIndex: 'level',
@@ -533,8 +541,8 @@ async function fetchLogs(reset = false) {
       before_id: logNextCursor.value ?? undefined,
       limit: 50,
       level: logLevel.value,
-      start: toLocalIso(logRange.value?.[0]),
-      end: toLocalIso(logRange.value?.[1]),
+      start: rangeBound(logRange.value?.[0], 'start'),
+      end: rangeBound(logRange.value?.[1], 'end'),
     });
     logs.value = reset ? resp.items : [...logs.value, ...resp.items];
     logNextCursor.value = resp.next_cursor;
@@ -551,8 +559,17 @@ function loadMoreLogs() {
   fetchLogs(false);
 }
 
+// 后端返回的时间戳带 +08:00（见 audit.py 的 _beijing_iso）。这里**显式按东八区
+// 渲染**，而不是交给浏览器本地时区：这张表的时间语义全站统一是北京时间（统计卡的
+// 「今日」、保留天数的清理都按北京时间的一天算），跟着浏览器走会和这两处对不上。
+//
+// 顺带说明为什么以前没换时区也没出错：老接口发的是不带偏移的串，JS 按**本地时区**
+// 解析，toLocaleString 又按本地渲染，墙上时间原样往返——显示恰好是对的，但那是
+// 解析规则的巧合，不是约定。现在两端都写明了，换谁来读都不会偏。
 function formatTime(v: null | string): string {
-  return v ? new Date(v).toLocaleString('zh-CN') : '-';
+  return v
+    ? new Date(v).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })
+    : '-';
 }
 
 onMounted(() => {
