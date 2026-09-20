@@ -25,10 +25,12 @@ export function actionColor(action: string): string {
   //    ——`auth.login.failed` 也含 'login'。
   if (action.includes('failed') || action.includes('reject')) return 'red';
 
-  // ② 解除类必须先于施加类判：`user.unban` 里含 'ban'。
-  if (action.includes('unban')) return 'green';
+  // ② 解除类必须先于施加类判：`user.unban` 里含 'ban'，`visitor.unblock` 里含
+  //    'block'。
+  if (action.includes('unban') || action.includes('unblock')) return 'green';
   if (
     action.includes('ban') ||
+    action.includes('block') ||
     action.includes('delete') ||
     action.includes('clear')
   ) {

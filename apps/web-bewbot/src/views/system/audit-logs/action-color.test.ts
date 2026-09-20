@@ -22,6 +22,9 @@ describe('actionColor', () => {
     // 原先两条都命中 includes('ban') → 「解除拉黑」和「拉黑」同色。
     expect(actionColor('user.unban')).not.toBe(actionColor('user.ban'));
     expect(actionColor('admin.unban')).not.toBe(actionColor('admin.ban'));
+    expect(actionColor('visitor.unblock')).not.toBe(
+      actionColor('visitor.block'),
+    );
   });
 
   it('「有人被挡在门外」这类事件不用中性色', () => {
@@ -56,6 +59,8 @@ describe('actionColor', () => {
       ['admin.ban', 'red'],
       ['admin.unban', 'green'],
       ['user.delete', 'red'],
+      ['visitor.block', 'red'],
+      ['visitor.unblock', 'green'],
       ['account.delete', 'red'],
       ['code.delete', 'red'],
       ['audit.clear_operations', 'red'],
