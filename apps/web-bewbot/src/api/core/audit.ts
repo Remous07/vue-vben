@@ -89,12 +89,12 @@ export function setAuditRetentionApi(payload: RetentionConfig) {
   return requestClient.put('/audit/retention', payload);
 }
 
-/** 一键清空操作记录 */
+/** 一键清空操作记录（返回删了多少条，用于提示） */
 export function clearAuditOperationsApi() {
-  return requestClient.delete('/audit/operations');
+  return requestClient.delete<{ deleted: number }>('/audit/operations');
 }
 
-/** 一键清空运行日志 */
+/** 一键清空运行日志（返回删了多少条，用于提示） */
 export function clearRuntimeLogsApi() {
-  return requestClient.delete('/audit/runtime-logs');
+  return requestClient.delete<{ deleted: number }>('/audit/runtime-logs');
 }

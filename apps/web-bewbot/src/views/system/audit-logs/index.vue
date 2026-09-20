@@ -494,15 +494,16 @@ function onOpReset() {
   onOpSearch();
 }
 
+// 提示里带上删了多少条：这是一个不可恢复的操作，用户有权知道刚刚抹掉了多少。
 async function handleClearOperations() {
-  await clearAuditOperationsApi();
-  message.success('已清空操作记录');
+  const res = await clearAuditOperationsApi();
+  message.success(`已清空操作记录（${res?.deleted ?? 0} 条）`);
   onOpSearch();
 }
 
 async function handleClearLogs() {
-  await clearRuntimeLogsApi();
-  message.success('已清空运行日志');
+  const res = await clearRuntimeLogsApi();
+  message.success(`已清空运行日志（${res?.deleted ?? 0} 条）`);
   onLogSearch();
 }
 
