@@ -47,6 +47,7 @@ import {
   viewerUsesBeijingClock,
 } from '#/utils/datetime';
 
+import { actionColor } from './action-color';
 import { rangeBound } from './range-bound';
 
 defineOptions({ name: 'AuditLogs' });
@@ -193,23 +194,6 @@ function levelColor(level: string): string {
     WARNING: 'orange',
   };
   return map[level] || 'default';
-}
-
-function actionColor(action: string): string {
-  if (action.includes('delete') || action.includes('ban')) return 'red';
-  if (action.includes('login') || action.includes('logout')) return 'green';
-  if (action.includes('role')) return 'purple';
-  if (action.includes('invite') || action.includes('code')) return 'geekblue';
-  if (action.includes('settings') || action.includes('rotate')) return 'orange';
-  if (action.includes('rate_limit')) return 'volcano';
-  if (
-    action.includes('profile') ||
-    action.includes('account') ||
-    action.includes('register')
-  ) {
-    return 'cyan';
-  }
-  return 'default';
 }
 
 function flagEmoji(code: null | string): string {
