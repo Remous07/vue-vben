@@ -71,7 +71,9 @@ async function handleSubmit() {
     message.success('密码已重置，请使用新密码登录');
     router.push('/auth/login');
   } catch {
-    message.error('重置失败，链接可能已过期');
+    // 失败文案由拦截器按后端的 detail 弹出（「重置链接无效或已过期」），这里不再
+    // 补一条意思相近的——两句话会一起弹出来。链接是一次性的，重复使用就会走到
+    // 这条 400，那句话正是用户需要看到的解释。
   } finally {
     loading.value = false;
   }
