@@ -51,6 +51,12 @@ import {
 } from '#/api/core';
 import { formatBeijingDateTime } from '#/utils/datetime';
 
+import {
+  secretFieldAfterSave,
+  secretFieldConfigured,
+  secretFieldDisplay,
+} from './secret-field';
+
 defineOptions({ name: 'InviteCodes' });
 
 const { isDark, isMobile } = usePreferences();
@@ -275,6 +281,18 @@ const auditProvider = ref('');
 const auditBaseUrl = ref('');
 const auditModel = ref('');
 const auditApiKey = ref('');
+// 后端对这把密钥「只写不读」：读接口给一个字面量占位符，写入侧认它为「保持不变」。
+// 占位符不能当值显示（否则遮罩成「•••」、点眼睛显示 *** 本身，看着像坏了），所以
+// 显示走下面这个 computed，auditApiKey 本身保持后端原值不动——保存逻辑一个字不用改。
+const auditApiKeyInput = computed({
+  get: () => secretFieldDisplay(auditApiKey.value),
+  set: (v: string) => {
+    auditApiKey.value = v;
+  },
+});
+const auditApiKeyConfigured = computed(() =>
+  secretFieldConfigured(auditApiKey.value),
+);
 const auditFailOpen = ref(true);
 const auditModelOptions = ref<{ label: string; value: string }[]>([]);
 const fetchingModels = ref(false);
@@ -356,6 +374,9 @@ async function _saveAuditSettings(closeModal: boolean) {
   auditSettings.value.provider = auditProvider.value;
   auditSettings.value.base_url = auditBaseUrl.value;
   auditSettings.value.model = auditModel.value;
+  // 保存成功后收回「已配置」状态：面板不该继续留着刚填的明文，而刷新页面看到的也
+  // 正是这个（后端不回显）——两条路保持一致。清空过就保持空，那表示库里没有密钥。
+  auditApiKey.value = secretFieldAfterSave(auditApiKey.value);
   auditSettings.value.api_key = auditApiKey.value;
   auditSettings.value.fail_open = String(auditFailOpen.value);
   if (closeModal) {
@@ -1468,11 +1489,19 @@ onMounted(fetchData);
       <div style="margin-bottom: 12px">
         <label>API Key</label>
         <Input.Password
-          v-model:value="auditApiKey"
-          placeholder="sk-..."
+          v-model:value="auditApiKeyInput"
+          :placeholder="
+            auditApiKeyConfigured ? '已配置（出于安全不回显）' : 'sk-...'
+          "
           allow-clear
           style="margin-top: 4px"
         />
+        <span
+          v-if="auditApiKeyConfigured"
+          style="font-size: 12px; color: hsl(var(--muted-foreground) / 80%)"
+        >
+          密钥只写不读，原值不回显。不动它＝不修改；输入新值＝替换。
+        </span>
       </div>
       <div style="margin-bottom: 12px">
         <label>模型</label>
