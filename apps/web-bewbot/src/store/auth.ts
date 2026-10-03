@@ -124,11 +124,19 @@ export const useAuthStore = defineStore('auth', () => {
     resetAllStores();
     accessStore.setLoginExpired(false);
 
+    // 已经在登录页时不能再带 redirect：此时 currentRoute.fullPath 就是登录页本身，
+    // 再编码一层会得到「登录页?redirect=编码后的登录页」，下一次又在这个基础上再包一层，
+    // 反复登出会让 URL 逐跳变长，且没有上限。（上游 #8417 修的就是这个，这段是从
+    // apps/web-antd 复制过来的，一并跟上。）
+    const currentRoute = router.currentRoute.value;
+    const alreadyOnLogin = currentRoute.path === LOGIN_PATH;
+
     await router.replace({
       path: LOGIN_PATH,
-      query: redirect
-        ? { redirect: encodeURIComponent(router.currentRoute.value.fullPath) }
-        : {},
+      query:
+        redirect && !alreadyOnLogin
+          ? { redirect: encodeURIComponent(currentRoute.fullPath) }
+          : {},
     });
   }
 
