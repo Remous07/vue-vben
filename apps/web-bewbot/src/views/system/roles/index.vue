@@ -32,6 +32,11 @@ import {
 } from '#/api/core';
 import { formatBeijingDateTime } from '#/utils/datetime';
 
+import {
+  collapsibleSubKeys as collapsibleSubKeysOf,
+  groupPermissions,
+} from './permission-groups';
+
 defineOptions({ name: 'RoleManagement' });
 
 const { isDark } = usePreferences();
@@ -57,127 +62,9 @@ const dimTextStyle = computed(() => ({
   color: isDark.value ? 'rgba(255,255,255,0.6)' : '#666',
 }));
 
-// 顶层分组及其子分组划分。多子分组的分组（机器人功能/系统权限）渲染为
-// 可折叠子分组；其余单子分组（个人设置等）平铺展示。
-const GROUP_SUB_PREFIXES: Record<string, string[]> = {
-  system: [
-    'dashboard',
-    'admin',
-    'users',
-    'registration',
-    'invite',
-    'audit',
-    'bot',
-  ],
-  bot_features: ['messages', 'conversation', 'visitors'],
-};
-
-const PREFIX_TO_GROUP: Record<string, string> = {};
-for (const [group, prefixes] of Object.entries(GROUP_SUB_PREFIXES)) {
-  for (const prefix of prefixes) {
-    PREFIX_TO_GROUP[prefix] = group;
-  }
-}
-
-function groupOf(code: string): string {
-  const prefix = code.split(':')[0] || 'other';
-  return PREFIX_TO_GROUP[prefix] || prefix;
-}
-
-const CATEGORY_LABELS: Record<string, string> = {
-  bot_features: '机器人功能',
-  system: '系统权限',
-  profile: '个人设置',
-};
-
-const CATEGORY_ICONS: Record<string, string> = {
-  bot_features: 'lucide:bot',
-  system: 'lucide:shield',
-  profile: 'lucide:settings',
-};
-
-// 子分组标签与图标
-const SUB_LABELS: Record<string, string> = {
-  admin: '后台用户',
-  audit: '日志审计',
-  bot: '机器人设置',
-  conversation: '对话',
-  dashboard: '仪表盘',
-  invite: '邀请码',
-  messages: '消息',
-  registration: '注册设置',
-  users: 'TG用户',
-  visitors: '访客',
-};
-
-const SUB_ICONS: Record<string, string> = {
-  admin: 'lucide:shield',
-  audit: 'lucide:scroll-text',
-  bot: 'lucide:bot',
-  conversation: 'lucide:message-circle',
-  dashboard: 'lucide:layout-dashboard',
-  invite: 'lucide:gift',
-  messages: 'lucide:message-square',
-  registration: 'lucide:user-plus',
-  users: 'lucide:users',
-  visitors: 'lucide:ban',
-};
-
-interface PermSubGroup {
-  icon: string;
-  key: string;
-  label: string;
-  perms: PermissionItem[];
-}
-
-function toSubGroup(key: string, perms: PermissionItem[]): PermSubGroup {
-  return {
-    key,
-    label: SUB_LABELS[key] || key,
-    icon: SUB_ICONS[key] || 'lucide:folder',
-    perms,
-  };
-}
-
-function subGroupsFor(
-  perms: PermissionItem[],
-  groupKey: string,
-): PermSubGroup[] {
-  const prefixes = GROUP_SUB_PREFIXES[groupKey] || [];
-  const groups: Record<string, PermissionItem[]> = {};
-  for (const perm of perms) {
-    const prefix = perm.code.split(':')[0] || 'other';
-    (groups[prefix] ??= []).push(perm);
-  }
-  const ordered: PermSubGroup[] = [];
-  for (const prefix of prefixes) {
-    const subPerms = groups[prefix];
-    if (subPerms) ordered.push(toSubGroup(prefix, subPerms));
-  }
-  return ordered;
-}
-
-const permissionGroups = computed(() => {
-  const groups: Record<string, PermissionItem[]> = {};
-  for (const perm of permissions.value) {
-    const key = groupOf(perm.code);
-    (groups[key] ??= []).push(perm);
-  }
-  return Object.entries(groups)
-    .toSorted(([a], [b]) => {
-      const labels = Object.keys(CATEGORY_LABELS);
-      return labels.indexOf(a) - labels.indexOf(b);
-    })
-    .map(([key, perms]) => ({
-      key,
-      label: CATEGORY_LABELS[key] || key,
-      icon: CATEGORY_ICONS[key] || 'lucide:folder',
-      perms,
-      subgroups: GROUP_SUB_PREFIXES[key]
-        ? subGroupsFor(perms, key)
-        : [toSubGroup(key, perms)],
-    }));
-});
+// 权限树的分组规则（含「哪个码归哪组、中文名叫什么」）在 permission-groups.ts 里，
+// 那儿有单测钉着。这里只负责把它接到响应式数据上。
+const permissionGroups = computed(() => groupPermissions(permissions.value));
 
 function selectedCount(perms: PermissionItem[]): number {
   return perms.filter((p) => formPermissionIds.value.includes(p.id)).length;
@@ -199,9 +86,7 @@ function togglePermission(perm: PermissionItem) {
 
 // Sub-group keys for groups that render a nested Collapse (>1 subgroups).
 function collapsibleSubKeys(): string[] {
-  return permissionGroups.value
-    .filter((g) => g.subgroups.length > 1)
-    .flatMap((g) => g.subgroups.map((s) => s.key));
+  return collapsibleSubKeysOf(permissionGroups.value);
 }
 
 // "全部展开" considers both the top-level groups and any nested sub-groups,
