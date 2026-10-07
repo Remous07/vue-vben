@@ -1,14 +1,20 @@
 <script lang="ts" setup>
 import type { TableColumnsType } from 'ant-design-vue';
 
+import type { VisitorTranslation } from './visitor-translation';
+
 import { computed, h, onMounted, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
+import { usePreferences } from '@vben/preferences';
+import { useUserStore } from '@vben/stores';
 
 import {
   Button,
   Card,
   Col,
+  Descriptions,
+  Drawer,
   Input,
   message,
   Popconfirm,
@@ -23,6 +29,13 @@ import {
 import { blockVisitorApi, unblockVisitorApi } from '#/api/core';
 import { requestClient } from '#/api/request';
 import { formatBeijingDateTime } from '#/utils/datetime';
+
+import {
+  directionTag,
+  isTranslating,
+  TRANSLATION_PERMISSION,
+  translationRows,
+} from './visitor-translation';
 
 defineOptions({ name: 'MessageHistory' });
 
@@ -44,6 +57,11 @@ interface Conversation {
   rate_limited: boolean;
   rate_limited_count: number;
   rate_limited_remaining: number;
+  // 这位访客的翻译设置（「管理员 × 访客」一对一份）。
+  // **null 只有一个意思：登录者没有 `translation:use`**——有权限的人每位访客都会
+  // 拿到一份，从没设置过的那位拿到的是「两向都关」的默认态。所以这一列画不画，
+  // 看的是权限；某一行的值是空串，才是「这位访客没在翻」。
+  translation: null | VisitorTranslation;
 }
 
 function avatarChar(name: string): string {
@@ -88,6 +106,16 @@ const conversations = ref<Conversation[]>([]);
 const loading = ref(false);
 const searchText = ref('');
 
+// 抽屉。存**这一行**而不是 id：抽屉里要显示的就是这一行的设置，页面也不会在抽屉
+// 开着的时候替换数据（没有轮询、没有自动刷新）。
+const drawerRecord = ref<Conversation | null>(null);
+const drawerOpen = computed({
+  get: () => drawerRecord.value !== null,
+  set: (open: boolean) => {
+    if (!open) drawerRecord.value = null;
+  },
+});
+
 const filteredConversations = computed(() => {
   const q = searchText.value.trim().toLowerCase();
   if (!q) return conversations.value;
@@ -113,6 +141,38 @@ const blockedCount = computed(
 const premiumCount = computed(
   () => conversations.value.filter((c) => c.is_premium).length,
 );
+const translatingCount = computed(
+  () => conversations.value.filter((c) => isTranslating(c.translation)).length,
+);
+
+// 这一列和那颗按钮画不画，看的是**权限**，不是数据。
+//
+// 后端对没有 `translation:use` 的人一律不下发这份数据（`translation` 恒为 null），
+// 所以这里两种判据是等价的——但**门在后端**：这里少画一列只是别让人看见一个空列，
+// 不是权限本身。别把这两件事对调。
+const userStore = useUserStore();
+const canTranslate = computed(() =>
+  Boolean(userStore.userInfo?.permissions?.includes(TRANSLATION_PERMISSION)),
+);
+
+const { isDark, isMobile } = usePreferences();
+const mutedTextStyle = computed(() => ({
+  color: isDark.value ? 'rgba(255,255,255,0.6)' : '#666',
+}));
+
+/** 抽屉标题点名是哪位访客——抽屉盖住了表格，标题里不写就不知道在看谁的。 */
+const drawerTitle = computed(() => {
+  const record = drawerRecord.value;
+  if (!record) return '访客翻译';
+  const name =
+    record.first_name || record.username || `TG ${record.telegram_id}`;
+  return `访客翻译 · ${name}`;
+});
+
+const drawerRows = computed(() => {
+  const translation = drawerRecord.value?.translation;
+  return translation ? translationRows(translation, formatBeijingDateTime) : [];
+});
 
 async function handleBlock(record: Conversation) {
   await blockVisitorApi(record.telegram_id);
@@ -126,7 +186,7 @@ async function handleUnblock(record: Conversation) {
   message.success('已取消拉黑');
 }
 
-const columns: TableColumnsType = [
+const columns = computed<TableColumnsType>(() => [
   {
     title: '',
     key: 'status',
@@ -269,8 +329,23 @@ const columns: TableColumnsType = [
     customRender: ({ text }: { text: null | string }) =>
       formatBeijingDateTime(text),
   },
-  { title: '操作', key: 'action', width: 100 },
-];
+  // 翻译那一列**只有有权限的人看得到**。没有权限时后端也不下发这份数据，两处一致。
+  ...(canTranslate.value
+    ? [
+        {
+          title: '翻译',
+          key: 'translation',
+          width: 75,
+          align: 'center' as const,
+          customRender: ({ record }: { record: Conversation }) => {
+            const label = directionTag(record.translation);
+            return label ? h(Tag, { color: 'blue' }, () => label) : '-';
+          },
+        },
+      ]
+    : []),
+  { title: '操作', key: 'action', width: canTranslate.value ? 150 : 100 },
+]);
 
 // Table 的横向滚动基准宽度：必须是**数值**，不能写 'max-content'。
 //
@@ -282,7 +357,7 @@ const columns: TableColumnsType = [
 // 取各列 width 之和，固定布局才会真正按列宽走。写成计算式而不是写死数字，是为了
 // 以后调列宽时不会漏改这里。
 const scrollX = computed(() =>
-  columns.reduce(
+  columns.value.reduce(
     (sum, col) =>
       sum + ('width' in col && typeof col.width === 'number' ? col.width : 120),
     0,
@@ -303,13 +378,17 @@ onMounted(fetchConversations);
 
 <template>
   <Page>
+    <!--
+      五张卡用 :sm="8"（桌面端一行三张，3+2）而不是原来的 ":sm=6"（一行四张）：
+      4 + 1 会让第二行孤零零挂着一张，看着像漏排了。
+    -->
     <Row :gutter="[16, 16]" style="margin-bottom: 16px">
-      <Col :xs="12" :sm="6">
+      <Col :xs="12" :sm="8">
         <Card>
           <Statistic title="总访客" :value="conversations.length" />
         </Card>
       </Col>
-      <Col :xs="12" :sm="6">
+      <Col :xs="12" :sm="8">
         <Card>
           <Statistic
             title="活跃中"
@@ -318,7 +397,7 @@ onMounted(fetchConversations);
           />
         </Card>
       </Col>
-      <Col :xs="12" :sm="6">
+      <Col :xs="12" :sm="8">
         <Card>
           <Statistic
             title="已拉黑"
@@ -327,12 +406,23 @@ onMounted(fetchConversations);
           />
         </Card>
       </Col>
-      <Col :xs="12" :sm="6">
+      <Col :xs="12" :sm="8">
         <Card>
           <Statistic
             title="会员"
             :value="premiumCount"
             :value-style="{ color: '#faad14' }"
+          />
+        </Card>
+      </Col>
+      <!-- 「翻译中」跟着那一列一起藏：没有 translation:use 的人连这一列都看不到，
+           顶上一张恒为 0 的统计卡只会让人来问「这个 0 是什么意思」。 -->
+      <Col v-if="canTranslate" :xs="12" :sm="8">
+        <Card>
+          <Statistic
+            title="翻译中"
+            :value="translatingCount"
+            :value-style="{ color: '#1677ff' }"
           />
         </Card>
       </Col>
@@ -362,28 +452,63 @@ onMounted(fetchConversations);
     >
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'action'">
-          <template v-if="(record as Conversation).is_blocked">
+          <Space :size="4">
+            <!-- 翻译是**只读**的：面板是「回头看一眼」的地方，改留在 Telegram 那张卡上
+                 （抽屉底部也这么写着）。没有权限的人连这颗按钮都看不到。 -->
             <Button
+              v-if="canTranslate"
               size="small"
-              type="primary"
-              @click="handleUnblock(record as Conversation)"
+              @click="drawerRecord = record as Conversation"
             >
-              取消拉黑
+              翻译
             </Button>
-          </template>
-          <template v-else>
-            <Popconfirm
-              title="确定拉黑该用户？"
-              :description="`TG ID: ${(record as Conversation).telegram_id}`"
-              ok-text="确认拉黑"
-              cancel-text="取消"
-              @confirm="handleBlock(record as Conversation)"
-            >
-              <Button size="small" danger> 拉黑 </Button>
-            </Popconfirm>
-          </template>
+            <template v-if="(record as Conversation).is_blocked">
+              <Button
+                size="small"
+                type="primary"
+                @click="handleUnblock(record as Conversation)"
+              >
+                取消拉黑
+              </Button>
+            </template>
+            <template v-else>
+              <Popconfirm
+                title="确定拉黑该用户？"
+                :description="`TG ID: ${(record as Conversation).telegram_id}`"
+                ok-text="确认拉黑"
+                cancel-text="取消"
+                @confirm="handleBlock(record as Conversation)"
+              >
+                <Button size="small" danger> 拉黑 </Button>
+              </Popconfirm>
+            </template>
+          </Space>
         </template>
       </template>
     </Table>
+
+    <Drawer
+      v-model:open="drawerOpen"
+      :width="isMobile ? '100%' : 420"
+      :title="drawerTitle"
+    >
+      <template v-if="drawerRecord?.translation">
+        <Descriptions :column="1" size="small" bordered>
+          <Descriptions.Item
+            v-for="row in drawerRows"
+            :key="row.label"
+            :label="row.label"
+          >
+            <span :style="row.muted ? mutedTextStyle : undefined">
+              {{ row.value }}
+            </span>
+          </Descriptions.Item>
+        </Descriptions>
+        <p :style="mutedTextStyle" style="margin-top: 16px">
+          只影响这位访客。要修改，在 Telegram 里点这位访客消息卡片上的「🌐
+          翻译」。
+        </p>
+      </template>
+    </Drawer>
   </Page>
 </template>
