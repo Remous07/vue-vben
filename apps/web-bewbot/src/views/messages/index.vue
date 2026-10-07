@@ -10,7 +10,6 @@ import { usePreferences } from '@vben/preferences';
 import { useUserStore } from '@vben/stores';
 
 import {
-  Alert,
   Button,
   Card,
   Col,
@@ -34,8 +33,6 @@ import { formatBeijingDateTime } from '#/utils/datetime';
 import {
   directionRows,
   directionTag,
-  DRAWER_HINT,
-  DRAWER_SCOPE,
   isTranslating,
   lastUsedText,
   TRANSLATION_PERMISSION,
@@ -467,8 +464,9 @@ onMounted(fetchConversations);
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'action'">
           <Space :size="4">
-            <!-- 翻译是**只读**的：面板是「回头看一眼」的地方，改留在 Telegram 那张卡上
-                 （抽屉底部也这么写着）。没有权限的人连这颗按钮都看不到。 -->
+            <!-- 翻译是**只读**的：面板是「回头看一眼」的地方，改留在 Telegram 那张卡上。
+                 抽屉里不再写这句了（2026-10-07 去掉），所以这里是唯一说明它为什么没有
+                 编辑入口的地方——别把它当成「漏做了」。没有权限的人连这颗按钮都看不到。 -->
             <Button
               v-if="canTranslate"
               size="small"
@@ -534,14 +532,6 @@ onMounted(fetchConversations);
             {{ drawerLastUsed }}
           </Descriptions.Item>
         </Descriptions>
-
-        <Alert
-          type="info"
-          show-icon
-          class="mt-4"
-          :message="DRAWER_SCOPE"
-          :description="DRAWER_HINT"
-        />
       </template>
 
       <!-- 正常走不到（没有权限的人连这一列都看不到），但抽屉开着时数据被换掉之类的

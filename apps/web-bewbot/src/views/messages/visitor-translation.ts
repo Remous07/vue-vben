@@ -58,13 +58,6 @@ const DIRECTIONS = [
 
 export type Direction = (typeof DIRECTIONS)[number];
 
-/** 抽屉底部那句话。**关掉设置要去哪儿做**——只读视图最容易招的问题。 */
-export const DRAWER_HINT =
-  '如需调整，请在 Telegram 中打开该访客的消息卡片，点击「🌐 翻译」。';
-
-/** 抽屉顶部那句总述。放在最上面，先说清这条设置的作用范围。 */
-export const DRAWER_SCOPE = '该设置仅对当前访客生效。';
-
 /** 任一方向开着就算「在翻」。列表那一列据此上色。 */
 export function isTranslating(
   translation: null | undefined | VisitorTranslation,
