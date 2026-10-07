@@ -33,7 +33,6 @@ export interface VisitorTranslation {
  */
 const DIRECTIONS = [
   {
-    icon: 'lucide:inbox',
     key: 'read',
     label: '读',
     langField: 'read_lang',
@@ -46,7 +45,6 @@ const DIRECTIONS = [
     title: '读取方向',
   },
   {
-    icon: 'lucide:send',
     key: 'write',
     label: '发',
     langField: 'write_lang',
@@ -90,36 +88,32 @@ export function directionTag(
     .join('+');
 }
 
-export interface DirectionBlock {
+export interface DirectionRow {
   /** 开着时：这条路现在是怎么走的 */
   description: string;
   enabled: boolean;
-  icon: string;
   key: string;
-  /** 服务商的标签行；关着时为空串（不展示留存的配置，见下） */
+  /** 这一行在标签列上的字（`Descriptions` 的 label） */
+  label: string;
+  /** 服务商那一行；关着时为空串（不展示留存的配置，见下） */
   providerLine: string;
   /** 「已启用」/「未启用」 */
   statusText: string;
-  title: string;
 }
 
 /**
- * 抽屉里那两块（每个方向一块）。
+ * 抽屉里那两行（每个方向一行）。
  *
  * **关着的方向不展示它留着的语言与服务商**，只说「按原文显示」：抽屉回答的是「他现在
  * 在翻什么」，关着的方向不生效，把留存的配置摆出来只是让人多看两行（机器人侧那张卡上
- * 「关着就不画那一行」是同一条取舍）。行宽也不一样——关着的那块更矮，一眼看得出哪边
- * 是活的。
+ * 「关着就不画那一行」是同一条取舍）。
  */
-export function directionBlocks(
-  translation: VisitorTranslation,
-): DirectionBlock[] {
+export function directionRows(translation: VisitorTranslation): DirectionRow[] {
   return DIRECTIONS.map((d) => {
     const enabled = translation[d.onField];
     return {
       key: d.key,
-      icon: d.icon,
-      title: d.title,
+      label: d.title,
       enabled,
       statusText: enabled ? '已启用' : '未启用',
       description: enabled

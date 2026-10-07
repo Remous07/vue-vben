@@ -3,7 +3,7 @@ import type { VisitorTranslation } from './visitor-translation';
 import { describe, expect, it } from 'vitest';
 
 import {
-  directionBlocks,
+  directionRows,
   directionTag,
   isTranslating,
   lastUsedText,
@@ -65,16 +65,16 @@ describe('isTranslating', () => {
   });
 });
 
-describe('directionBlocks', () => {
-  it('两块，顺序恒为读在前', () => {
-    const blocks = directionBlocks(with_({ write_enabled: true }));
+describe('directionRows', () => {
+  it('两行，顺序恒为读在前', () => {
+    const rows = directionRows(with_({ write_enabled: true }));
 
-    expect(blocks.map((b) => b.key)).toEqual(['read', 'write']);
-    expect(blocks.map((b) => b.title)).toEqual(['读取方向', '发送方向']);
+    expect(rows.map((r) => r.key)).toEqual(['read', 'write']);
+    expect(rows.map((r) => r.label)).toEqual(['读取方向', '发送方向']);
   });
 
   it('开着的方向写清楚「什么消息译成什么语言」，并给出服务商', () => {
-    const [read] = directionBlocks(
+    const [read] = directionRows(
       with_({
         read_enabled: true,
         read_lang: '🇯🇵 日语',
@@ -90,8 +90,8 @@ describe('directionBlocks', () => {
   it('两个方向的说法各是各的，不会串味', () => {
     // 措辞曾经用一串 `.replace()` 从「读」那一侧拼出来，结果在「发」上拼成了
     // 「你发出的消息不译，按原文显示」。两边各写各的，这条钉住它们不会互相污染。
-    const off = directionBlocks(OFF);
-    const on = directionBlocks(
+    const off = directionRows(OFF);
+    const on = directionRows(
       with_({ read_enabled: true, write_enabled: true, write_lang: '🇺🇸 英语' }),
     );
 
@@ -103,7 +103,7 @@ describe('directionBlocks', () => {
   it('关着的方向不摊开它留着的语言与服务商', () => {
     // 关掉不删行，语言和服务商还留着——但抽屉回答的是「他现在在翻什么」。把不生效的
     // 配置摆出来只是让人多看两行（机器人侧那张卡上「关着就不画那一行」是同一取舍）。
-    const [read] = directionBlocks(
+    const [read] = directionRows(
       with_({
         read_enabled: false,
         read_lang: '🇯🇵 日语',
@@ -117,12 +117,10 @@ describe('directionBlocks', () => {
     expect(JSON.stringify(read)).not.toContain('微软翻译');
   });
 
-  it('每块都带自己的图标与启用态，模板不必再判一次', () => {
-    const [read, write] = directionBlocks(with_({ read_enabled: true }));
+  it('每行都带自己的启用态，模板不必再判一次', () => {
+    const [read, write] = directionRows(with_({ read_enabled: true }));
 
-    expect(read?.icon).toBe('lucide:inbox');
     expect(read?.enabled).toBe(true);
-    expect(write?.icon).toBe('lucide:send');
     expect(write?.enabled).toBe(false);
   });
 });
@@ -146,8 +144,8 @@ describe('lastUsedText', () => {
 
     expect(never).toBeNull();
     expect(usedThenOff).not.toBeNull();
-    expect(directionBlocks(OFF)).toEqual(
-      directionBlocks(with_({ last_used_at: '2026-08-01T12:00:00+08:00' })),
+    expect(directionRows(OFF)).toEqual(
+      directionRows(with_({ last_used_at: '2026-08-01T12:00:00+08:00' })),
     );
   });
 });
