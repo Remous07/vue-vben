@@ -6,14 +6,15 @@ import type { VisitorTranslation } from './visitor-translation';
 import { computed, h, onMounted, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
+import { IconifyIcon } from '@vben/icons';
 import { usePreferences } from '@vben/preferences';
 import { useUserStore } from '@vben/stores';
 
 import {
+  Alert,
   Button,
   Card,
   Col,
-  Descriptions,
   Drawer,
   Input,
   message,
@@ -31,10 +32,13 @@ import { requestClient } from '#/api/request';
 import { formatBeijingDateTime } from '#/utils/datetime';
 
 import {
+  directionBlocks,
   directionTag,
+  DRAWER_HINT,
+  DRAWER_SCOPE,
   isTranslating,
+  lastUsedText,
   TRANSLATION_PERMISSION,
-  translationRows,
 } from './visitor-translation';
 
 defineOptions({ name: 'MessageHistory' });
@@ -155,23 +159,31 @@ const canTranslate = computed(() =>
   Boolean(userStore.userInfo?.permissions?.includes(TRANSLATION_PERMISSION)),
 );
 
-const { isDark, isMobile } = usePreferences();
-const mutedTextStyle = computed(() => ({
-  color: isDark.value ? 'rgba(255,255,255,0.6)' : '#666',
-}));
+const { isMobile } = usePreferences();
 
-/** 抽屉标题点名是哪位访客——抽屉盖住了表格，标题里不写就不知道在看谁的。 */
-const drawerTitle = computed(() => {
+/** 抽屉顶部点名是哪位访客——抽屉盖住了表格，不写就不知道在看谁的。 */
+const drawerTitleName = computed(() => {
   const record = drawerRecord.value;
-  if (!record) return '访客翻译';
-  const name =
-    record.first_name || record.username || `TG ${record.telegram_id}`;
-  return `访客翻译 · ${name}`;
+  if (!record) return '';
+  return record.first_name || record.username || `TG ${record.telegram_id}`;
 });
 
-const drawerRows = computed(() => {
+/** 标题下面那行身份：名字会重，TG ID 不会。 */
+const drawerSubtitle = computed(() => {
+  const record = drawerRecord.value;
+  if (!record) return '';
+  const handle = record.username ? `@${record.username}` : '';
+  return [handle, `TG ${record.telegram_id}`].filter(Boolean).join(' · ');
+});
+
+const drawerBlocks = computed(() => {
   const translation = drawerRecord.value?.translation;
-  return translation ? translationRows(translation, formatBeijingDateTime) : [];
+  return translation ? directionBlocks(translation) : [];
+});
+
+const drawerLastUsed = computed(() => {
+  const translation = drawerRecord.value?.translation;
+  return translation ? lastUsedText(translation, formatBeijingDateTime) : null;
 });
 
 async function handleBlock(record: Conversation) {
@@ -487,28 +499,158 @@ onMounted(fetchConversations);
       </template>
     </Table>
 
-    <Drawer
-      v-model:open="drawerOpen"
-      :width="isMobile ? '100%' : 420"
-      :title="drawerTitle"
-    >
-      <template v-if="drawerRecord?.translation">
-        <Descriptions :column="1" size="small" bordered>
-          <Descriptions.Item
-            v-for="row in drawerRows"
-            :key="row.label"
-            :label="row.label"
-          >
-            <span :style="row.muted ? mutedTextStyle : undefined">
-              {{ row.value }}
-            </span>
-          </Descriptions.Item>
-        </Descriptions>
-        <p :style="mutedTextStyle" style="margin-top: 16px">
-          只影响这位访客。要修改，在 Telegram 里点这位访客消息卡片上的「🌐
-          翻译」。
-        </p>
+    <Drawer v-model:open="drawerOpen" :width="isMobile ? '100%' : 440">
+      <template #title>
+        <Space :size="8" align="center">
+          <IconifyIcon icon="lucide:languages" style="color: #1677ff" />
+          <span style="font-weight: 600">访客翻译</span>
+        </Space>
       </template>
+
+      <template v-if="drawerRecord?.translation">
+        <!-- 先说这是谁：抽屉盖住了表格，而名字会重、TG ID 不会 -->
+        <div class="vt-head">
+          <span class="vt-head__name">{{ drawerTitleName }}</span>
+          <span class="vt-head__meta">{{ drawerSubtitle }}</span>
+        </div>
+
+        <!--
+          两个方向各成一块，形状一致（标题 + 状态标签 + 一句说明），扫一眼就能比出哪边
+          是活的：关着的那块没有服务商那一行，因此更矮，左侧色条也撤掉了。
+        -->
+        <div
+          v-for="block in drawerBlocks"
+          :key="block.key"
+          class="vt-block"
+          :class="{ 'vt-block--off': !block.enabled }"
+        >
+          <div class="vt-block__head">
+            <Space :size="6" align="center">
+              <IconifyIcon :icon="block.icon" class="vt-block__icon" />
+              <span class="vt-block__title">{{ block.title }}</span>
+            </Space>
+            <Tag :color="block.enabled ? 'success' : 'default'">
+              {{ block.statusText }}
+            </Tag>
+          </div>
+          <div class="vt-block__desc">{{ block.description }}</div>
+          <div v-if="block.providerLine" class="vt-block__meta">
+            {{ block.providerLine }}
+          </div>
+        </div>
+
+        <div v-if="drawerLastUsed" class="vt-lastused">
+          <span class="vt-lastused__label">上次翻译</span>
+          <span>{{ drawerLastUsed }}</span>
+        </div>
+
+        <Alert
+          class="vt-hint"
+          type="info"
+          show-icon
+          :message="DRAWER_SCOPE"
+          :description="DRAWER_HINT"
+        />
+      </template>
+
+      <!-- 正常走不到（没有权限的人连这一列都看不到），但抽屉开着时数据被换掉之类的
+           情况不该给一个空白抽屉 -->
+      <p v-else class="vt-empty">没有可显示的翻译设置。</p>
     </Drawer>
   </Page>
 </template>
+
+<style scoped>
+/* 抽屉内部那几块的排版。用 class 而不是一长串内联 style：这块有层次
+   （标题行 / 说明 / 服务商），内联写着读不出来。 */
+
+.vt-head {
+  margin-bottom: 16px;
+}
+
+.vt-head__name {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.vt-head__meta {
+  font-size: 12px;
+  color: hsl(var(--muted-foreground) / 80%);
+}
+
+.vt-block {
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  border: 1px solid hsl(var(--border));
+  border-left: 3px solid #1677ff;
+  border-radius: 6px;
+}
+
+/* 关着的那块：去掉左侧色条、不铺底色、文字压暗。
+   色条是「这条路是通的」的信号，不该给一个没在工作的方向。
+
+   **刻意不铺底色**（试过 `hsl(var(--muted) / 40%)`，渲染出来是一团糊的）：那块里的
+   标签本身就是灰的，再垫一层灰底，三者叠在一起「未启用」几乎读不出来。空心 + 灰边
+   与「已启用」那块的实心 + 蓝条对比也更清楚——实心/空心的差别一眼就分得出。 */
+.vt-block--off {
+  border-left-color: hsl(var(--border));
+}
+
+.vt-block__head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.vt-block__icon {
+  font-size: 15px;
+  color: #1677ff;
+}
+
+.vt-block--off .vt-block__icon {
+  color: hsl(var(--muted-foreground));
+}
+
+.vt-block__title {
+  font-weight: 600;
+}
+
+.vt-block__desc {
+  margin-top: 6px;
+  font-size: 13px;
+}
+
+.vt-block--off .vt-block__desc {
+  color: hsl(var(--muted-foreground) / 80%);
+}
+
+.vt-block__meta {
+  margin-top: 2px;
+  font-size: 12px;
+  color: hsl(var(--muted-foreground) / 80%);
+}
+
+.vt-lastused {
+  display: flex;
+  gap: 8px;
+  padding: 10px 2px;
+  margin-top: 4px;
+  font-size: 13px;
+  border-top: 1px solid hsl(var(--border));
+}
+
+.vt-lastused__label {
+  color: hsl(var(--muted-foreground) / 80%);
+}
+
+.vt-hint {
+  margin-top: 12px;
+}
+
+.vt-empty {
+  font-size: 13px;
+  color: hsl(var(--muted-foreground) / 80%);
+}
+</style>
