@@ -961,6 +961,7 @@ onMounted(async () => {
       v-model:open="passwordVisible"
       @ok="handleChangePassword"
       :confirm-loading="savingPwd"
+      :ok-button-props="{ disabled: newPwd.length < 10 || !currentPwd }"
       :width="440"
     >
       <template #title>
@@ -1006,7 +1007,7 @@ onMounted(async () => {
           v-model:value="newPwd"
           type="password"
           autocomplete="new-password"
-          placeholder="请输入新密码（至少6位）"
+          placeholder="请输入新密码（至少 10 位，建议用几个不相关的单词）"
           style="margin-top: 6px"
         />
       </div>

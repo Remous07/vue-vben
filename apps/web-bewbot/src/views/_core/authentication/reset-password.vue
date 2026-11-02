@@ -29,7 +29,10 @@ const [Form, formApi] = useVbenForm({
         placeholder: '请输入新密码',
       },
       fieldName: 'new_password',
-      rules: z.string().min(6, { message: '密码至少 6 个字符' }).max(128),
+      rules: z
+        .string()
+        .min(10, { message: '密码至少 10 个字符，建议用几个不相关的单词' })
+        .max(128),
     },
     {
       component: 'VbenInputPassword',

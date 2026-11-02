@@ -87,7 +87,10 @@ const [Form, formApi] = useVbenForm({
       },
       fieldName: 'password',
       label: $t('authentication.password'),
-      rules: z.string().min(6, { message: '密码至少 6 个字符' }).max(128),
+      rules: z
+        .string()
+        .min(10, { message: '密码至少 10 个字符，建议用几个不相关的单词' })
+        .max(128),
     },
     {
       component: 'VbenInputPassword',
