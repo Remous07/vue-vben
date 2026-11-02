@@ -50,6 +50,7 @@ import {
   unblockVisitorApi,
 } from '#/api/core';
 import { formatBeijingDateTime, formatBeijingShort } from '#/utils/datetime';
+import { expiredAtCell } from '#/utils/expiry';
 
 defineOptions({ name: 'ConversationCodes' });
 
@@ -303,14 +304,16 @@ const columns: TableColumnsType = [
   {
     title: '过期时间',
     key: 'expiry',
-    width: 160,
+    width: 220,
     customRender: ({ record }: { record: ConversationCodeItem }) => {
       if (record.is_default || !record.expires_at || !record.created_at)
         return '永久';
       const created = new Date(record.created_at).getTime();
       const expires = new Date(record.expires_at).getTime();
       const now = Date.now();
-      if (now >= expires) return h(Tag, { color: 'red' }, () => '已过期');
+      // 过期之后倒计时归零——只剩一个「已过期」就把过期那一刻藏起来了，
+      // 排查「这个码什么时候失效的」只能去翻审计日志。
+      if (now >= expires) return expiredAtCell(record.expires_at);
       const total = expires - created;
       const elapsed = now - created;
       const pct = Math.round((elapsed / total) * 100);
