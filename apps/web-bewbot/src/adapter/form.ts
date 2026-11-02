@@ -18,6 +18,10 @@ async function initSetupVbenForm() {
       // 一些组件是 v-model:checked 或者 v-model:fileList
       modelPropNameMap: {
         Checkbox: 'checked',
+        // IconPicker 用的是标准的 v-model（modelValue / update:modelValue），
+        // 不是 antd 的 v-model:value。上游 #8459 给每个 app 的适配器都加了这一行，
+        // web-bewbot 是 web-antd 的副本，合并不会带过来——手工跟上。
+        IconPicker: 'modelValue',
         Radio: 'checked',
         Switch: 'checked',
         Upload: 'fileList',
