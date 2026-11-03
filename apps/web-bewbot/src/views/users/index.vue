@@ -247,8 +247,15 @@ async function fetchUsers() {
     if (searchText.value.trim()) {
       params.search = searchText.value.trim();
     }
-    const resp = await requestClient.get('/users', { params });
-    users.value = resp.data ?? resp;
+    // `/users` 把 total 放在**顶层**（与 data 平级），而请求客户端默认只把
+    // `data` 字段交回来——直接用默认返回值，`resp` 就是数组，`resp.total` 恒为
+    // undefined，卡片上的「总用户」永远是 0（仪表盘走 /stats，数字是对的）。
+    // 拿整个 body 才能同时拿到列表和总数。
+    const resp = await requestClient.get<{ data: User[]; total: number }>(
+      '/users',
+      { params, responseReturn: 'body' },
+    );
+    users.value = resp.data ?? [];
     total.value = resp.total ?? 0;
   } finally {
     loading.value = false;
