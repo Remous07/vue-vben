@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { TableColumnsType } from 'ant-design-vue';
 
-import { computed, h, onMounted, ref } from 'vue';
+import { h, onMounted, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
 import { IconifyIcon } from '@vben/icons';
@@ -55,13 +55,11 @@ const searchText = ref('');
 const total = ref(0);
 const pagination = ref({ current: 1, pageSize: 20 });
 
-const boundCount = computed(() => users.value.filter((u) => u.is_bound).length);
-const bannedCount = computed(
-  () => users.value.filter((u) => u.is_banned).length,
-);
-const premiumCount = computed(
-  () => users.value.filter((u) => u.is_premium).length,
-);
+// 统计卡的数字来自后端聚合（全部匹配用户），**不是**当前页这一小撮。
+// 改之前它们是对 ``users.value`` 现算的，翻页/换页大小数字就跟着变——那是错的。
+const boundCount = ref(0);
+const bannedCount = ref(0);
+const premiumCount = ref(0);
 
 // Admin detail modal
 const adminModalVisible = ref(false);
@@ -251,12 +249,21 @@ async function fetchUsers() {
     // `data` 字段交回来——直接用默认返回值，`resp` 就是数组，`resp.total` 恒为
     // undefined，卡片上的「总用户」永远是 0（仪表盘走 /stats，数字是对的）。
     // 拿整个 body 才能同时拿到列表和总数。
-    const resp = await requestClient.get<{ data: User[]; total: number }>(
-      '/users',
-      { params, responseReturn: 'body' },
-    );
+    const resp = await requestClient.get<{
+      data: User[];
+      stats: {
+        banned: number;
+        bound: number;
+        premium: number;
+        total: number;
+      };
+      total: number;
+    }>('/users', { params, responseReturn: 'body' });
     users.value = resp.data ?? [];
     total.value = resp.total ?? 0;
+    boundCount.value = resp.stats?.bound ?? 0;
+    bannedCount.value = resp.stats?.banned ?? 0;
+    premiumCount.value = resp.stats?.premium ?? 0;
   } finally {
     loading.value = false;
   }
@@ -318,7 +325,7 @@ onMounted(fetchUsers);
         </Card>
       </Col>
       <Col :xs="12" :sm="6">
-        <Tooltip title="基于当前页数据">
+        <Tooltip title="全部匹配用户（随搜索条件变化）">
           <Card>
             <Statistic
               title="已绑定"
@@ -329,7 +336,7 @@ onMounted(fetchUsers);
         </Tooltip>
       </Col>
       <Col :xs="12" :sm="6">
-        <Tooltip title="基于当前页数据">
+        <Tooltip title="全部匹配用户（随搜索条件变化）">
           <Card>
             <Statistic
               title="已拉黑"
@@ -340,7 +347,7 @@ onMounted(fetchUsers);
         </Tooltip>
       </Col>
       <Col :xs="12" :sm="6">
-        <Tooltip title="基于当前页数据">
+        <Tooltip title="全部匹配用户（随搜索条件变化）">
           <Card>
             <Statistic
               title="会员"
