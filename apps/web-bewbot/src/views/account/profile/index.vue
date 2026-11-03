@@ -180,7 +180,9 @@ async function handleChangePassword() {
     message.success('密码已修改');
     passwordVisible.value = false;
   } catch {
-    message.error('修改失败');
+    // error handled by interceptor
+    // 弱口令的具体原因（「密码太容易被猜到…」）由它按后端的 detail 弹出；
+    // 这里不再补一句「修改失败」，否则同一次失败会弹两次。
   } finally {
     savingPwd.value = false;
   }
