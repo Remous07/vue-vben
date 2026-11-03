@@ -809,7 +809,9 @@ async function fetchData() {
     ]);
     codes.value = codesData;
     inviteRequired.value = settings.require_invite_code === 'true';
-    openRegistration.value = settings.open_registration !== 'false';
+    // 后端语义：设置行没写时，只有「库里还没有管理员」才算开（初始化窗口）。
+    // 能打开这个页面的用户自己就是管理员，所以对面板而言「没写」等于关。
+    openRegistration.value = settings.open_registration === 'true';
     availableRoles.value = roles;
     fallbackRoleId.value = settings.default_registration_role
       ? Number(settings.default_registration_role)
