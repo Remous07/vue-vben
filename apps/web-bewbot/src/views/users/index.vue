@@ -391,7 +391,7 @@ onMounted(fetchUsers);
             <Popconfirm
               v-if="!record.is_banned"
               title="确定拉黑该用户？"
-              :description="`TG ID: ${record.telegram_id}\n拉黑后将影响所有管理员的会话，该用户的消息将被静默忽略。`"
+              :description="`TG ID: ${record.telegram_id}\n拉黑后将影响所有管理员的会话，该用户的消息将被静默忽略。\n若该 TG 已绑定系统用户，会同时封禁其面板账号。`"
               ok-text="确认拉黑"
               cancel-text="取消"
               @confirm="handleBan(record.telegram_id)"

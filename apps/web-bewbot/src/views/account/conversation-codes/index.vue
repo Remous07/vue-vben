@@ -1075,6 +1075,14 @@ onMounted(async () => {
                   <Tag v-if="r.is_blocked" color="red" style="font-size: 11px">
                     已拉黑
                   </Tag>
+                  <Tag
+                    v-if="r.is_banned"
+                    color="volcano"
+                    style="font-size: 11px"
+                    title="全局拉黑：他发的消息会被忽略，管理员仍可主动联系"
+                  >
+                    全局拉黑
+                  </Tag>
                 </div>
                 <div
                   style="

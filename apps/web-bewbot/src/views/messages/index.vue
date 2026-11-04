@@ -55,6 +55,9 @@ interface Conversation {
   // null 永不超时（或无活跃会话，用 is_active 区分）
   conv_timeout_remaining: null | number;
   is_blocked: boolean;
+  // 全局拉黑（跨管理员、只挡进站）。与 is_blocked（当前管理员的黑名单）并列，
+  // 不是同一个东西，界面上也要分开显示。
+  is_banned: boolean;
   rate_limited: boolean;
   rate_limited_count: number;
   rate_limited_remaining: number;
@@ -283,6 +286,22 @@ const columns = computed<TableColumnsType>(() => [
     align: 'center',
     customRender: ({ text }: { text: boolean }) =>
       text ? h(Tag, { color: 'gold' }, () => 'Pre') : '-',
+  },
+  {
+    title: '全局状态',
+    key: 'is_banned',
+    width: 90,
+    align: 'center',
+    customRender: ({ record }: { record: Conversation }) =>
+      record.is_banned
+        ? h(
+            Tooltip,
+            {
+              title: '已被全局拉黑：他发的消息会被忽略，管理员仍可主动联系',
+            },
+            () => h(Tag, { color: 'red' }, () => '全局拉黑'),
+          )
+        : '-',
   },
   {
     title: '识别码',

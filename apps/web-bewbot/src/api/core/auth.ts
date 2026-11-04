@@ -300,6 +300,8 @@ export interface CodeUserItem {
   first_name: null | string;
   username: null | string;
   is_blocked: boolean;
+  // 全局拉黑（跨管理员、只挡进站）
+  is_banned: boolean;
   is_premium: boolean;
   last_active_at: null | string;
   message_count: number;
