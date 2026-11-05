@@ -20,4 +20,4 @@ async function initApplication() {
   unmountGlobalLoading();
 }
 
-initApplication();
+void initApplication();

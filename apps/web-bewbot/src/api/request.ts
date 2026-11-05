@@ -115,7 +115,7 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
         responseData?.error ??
         responseData?.message ??
         '';
-      message.error(withRetryAfter(errorMessage || msg, error));
+      void message.error(withRetryAfter(errorMessage || msg, error));
     }),
   );
 
