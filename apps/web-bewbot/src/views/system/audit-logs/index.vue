@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import type { DescriptionsItemType } from '@vben-core/shadcn-ui';
+
 import type {
   AuditOperationItem,
   AuditStats,
@@ -7,10 +9,12 @@ import type {
 
 import { computed, h, onMounted, ref } from 'vue';
 
-import { Page } from '@vben/common-ui';
+import { EllipsisText, Page, useVbenDrawer } from '@vben/common-ui';
 import { IconifyIcon } from '@vben/icons';
 import { usePreferences } from '@vben/preferences';
 import { useAccessStore } from '@vben/stores';
+
+import { VbenDescriptions } from '@vben-core/shadcn-ui';
 
 import {
   Button,
@@ -522,7 +526,45 @@ const logColumns = [
   },
   { title: '来源', dataIndex: 'logger', key: 'logger', width: 200 },
   { title: '消息', dataIndex: 'message', key: 'message', width: 420 },
+  { title: '操作', key: 'actions', width: 80 },
 ];
+
+// 运行日志的正文可能很长：表格里两行截断 + 点击就地展开，想看整条再进抽屉。
+// 抽屉里用等宽字体 + 保留换行，复制、对照都比悬浮提示靠谱。
+const detailLog = ref<null | RuntimeLogItem>(null);
+
+const [LogDetailDrawer, logDetailDrawerApi] = useVbenDrawer({
+  class: 'w-[600px] max-w-[92vw]',
+  footer: false,
+  title: '运行日志详情',
+});
+
+const detailItems = computed<DescriptionsItemType[]>(() => {
+  const log = detailLog.value;
+  if (!log) return [];
+  return [
+    {
+      label: '时间（北京时间）',
+      content: formatBeijingDateTime(log.created_at),
+    },
+    { label: '级别', content: log.level },
+    { label: '来源', content: log.logger },
+    {
+      label: '消息',
+      content: log.message,
+      contentStyle: {
+        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+        overflowWrap: 'anywhere',
+        whiteSpace: 'pre-wrap',
+      },
+    },
+  ];
+});
+
+function openLogDetail(record: RuntimeLogItem) {
+  detailLog.value = record;
+  logDetailDrawerApi.open();
+}
 
 async function fetchLogs(reset = false) {
   if (reset) {
@@ -769,14 +811,20 @@ onMounted(() => {
               </template>
             </template>
             <template v-else-if="column.key === 'detail'">
-              <Tooltip
+              <!-- 两行截断 + 点击展开；提示框只在真被截断时出现，且放宽到可读的宽度 -->
+              <EllipsisText
                 v-if="(record as AuditOperationItem).detail"
-                :title="(record as AuditOperationItem).detail"
+                :line="2"
+                :tooltip-max-width="560"
+                :tooltip-overlay-style="{
+                  textAlign: 'left',
+                  whiteSpace: 'pre-wrap',
+                }"
+                expand
+                tooltip-when-ellipsis
               >
-                <span class="ellipsis-text">
-                  {{ (record as AuditOperationItem).detail }}
-                </span>
-              </Tooltip>
+                {{ (record as AuditOperationItem).detail }}
+              </EllipsisText>
               <span v-else>-</span>
             </template>
           </template>
@@ -852,11 +900,28 @@ onMounted(() => {
               </template>
             </template>
             <template v-else-if="column.key === 'message'">
-              <Tooltip :title="(record as RuntimeLogItem).message">
-                <span class="ellipsis-text">
-                  {{ (record as RuntimeLogItem).message }}
-                </span>
-              </Tooltip>
+              <EllipsisText
+                :line="2"
+                :tooltip-max-width="560"
+                :tooltip-overlay-style="{
+                  textAlign: 'left',
+                  whiteSpace: 'pre-wrap',
+                }"
+                class="break-all font-mono text-xs"
+                expand
+                tooltip-when-ellipsis
+              >
+                {{ (record as RuntimeLogItem).message }}
+              </EllipsisText>
+            </template>
+            <template v-else-if="column.key === 'actions'">
+              <Button
+                size="small"
+                type="link"
+                @click="openLogDetail(record as RuntimeLogItem)"
+              >
+                查看
+              </Button>
             </template>
           </template>
         </Table>
@@ -868,17 +933,19 @@ onMounted(() => {
         </div>
       </Tabs.TabPane>
     </Tabs>
+
+    <LogDetailDrawer>
+      <VbenDescriptions
+        v-if="detailLog"
+        :column="1"
+        :items="detailItems"
+        bordered
+      />
+    </LogDetailDrawer>
   </Page>
 </template>
 
 <style scoped>
-.ellipsis-text {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .stat-card {
   transition:
     box-shadow 0.2s,
