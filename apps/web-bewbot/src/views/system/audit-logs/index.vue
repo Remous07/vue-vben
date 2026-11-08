@@ -567,6 +567,11 @@ function openLogDetail(record: RuntimeLogItem) {
   logDetailDrawerApi.open();
 }
 
+/** 复制出去的是整条日志：时间 + 级别 + 来源 + 正文，和日志文件里的一行同构。 */
+function logLineOf(log: RuntimeLogItem): string {
+  return `${formatBeijingDateTime(log.created_at)} [${log.level}] ${log.logger}: ${log.message}`;
+}
+
 // legacy: true 在非安全上下文（http）下回退到 execCommand——复制不该因为
 // 部署协议不同就悄悄失效。
 const { copy } = useClipboard({ legacy: true });
@@ -934,7 +939,7 @@ onMounted(() => {
               <Button
                 size="small"
                 type="link"
-                @click="copyLogMessage((record as RuntimeLogItem).message)"
+                @click="copyLogMessage(logLineOf(record as RuntimeLogItem))"
               >
                 复制
               </Button>
@@ -962,7 +967,7 @@ onMounted(() => {
         <Button
           v-if="detailLog"
           size="small"
-          @click="copyLogMessage(detailLog.message)"
+          @click="copyLogMessage(logLineOf(detailLog))"
         >
           <IconifyIcon icon="lucide:copy" style="margin-right: 4px" />
           复制
