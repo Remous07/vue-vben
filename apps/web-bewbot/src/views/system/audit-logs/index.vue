@@ -16,6 +16,7 @@ import { useAccessStore } from '@vben/stores';
 
 import { VbenDescriptions } from '@vben-core/shadcn-ui';
 
+import { useClipboard } from '@vueuse/core';
 import {
   Button,
   Card,
@@ -526,7 +527,7 @@ const logColumns = [
   },
   { title: '来源', dataIndex: 'logger', key: 'logger', width: 200 },
   { title: '消息', dataIndex: 'message', key: 'message', width: 420 },
-  { title: '操作', key: 'actions', width: 80 },
+  { title: '操作', key: 'actions', width: 130 },
 ];
 
 // 运行日志的正文可能很长：表格里两行截断 + 点击就地展开，想看整条再进抽屉。
@@ -564,6 +565,21 @@ const detailItems = computed<DescriptionsItemType[]>(() => {
 function openLogDetail(record: RuntimeLogItem) {
   detailLog.value = record;
   logDetailDrawerApi.open();
+}
+
+// legacy: true 在非安全上下文（http）下回退到 execCommand——复制不该因为
+// 部署协议不同就悄悄失效。
+const { copy } = useClipboard({ legacy: true });
+
+async function copyLogMessage(text: string) {
+  if (!text) return;
+  try {
+    await copy(text);
+    message.success('已复制');
+  } catch {
+    // 浏览器拒绝（权限、非聚焦等）时别装作成功，让用户自己选中
+    message.error('复制失败，请手动选中');
+  }
 }
 
 async function fetchLogs(reset = false) {
@@ -918,6 +934,13 @@ onMounted(() => {
               <Button
                 size="small"
                 type="link"
+                @click="copyLogMessage((record as RuntimeLogItem).message)"
+              >
+                复制
+              </Button>
+              <Button
+                size="small"
+                type="link"
                 @click="openLogDetail(record as RuntimeLogItem)"
               >
                 查看
@@ -935,6 +958,16 @@ onMounted(() => {
     </Tabs>
 
     <LogDetailDrawer>
+      <template #extra>
+        <Button
+          v-if="detailLog"
+          size="small"
+          @click="copyLogMessage(detailLog.message)"
+        >
+          <IconifyIcon icon="lucide:copy" style="margin-right: 4px" />
+          复制
+        </Button>
+      </template>
       <VbenDescriptions
         v-if="detailLog"
         :column="1"
