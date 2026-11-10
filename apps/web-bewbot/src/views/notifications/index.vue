@@ -56,25 +56,17 @@ function open(item: PanelNotification) {
     description="告警是已经发生的事，读过即可；待办是此刻成立的条件，做完或忽略后才会消失。"
     title="通知中心"
   >
+    <!-- 工具栏上的按钮用默认尺寸（h-9）：VbenSegmented 的 TabsList 就是 h-9，
+         `sm` 是 h-8，放在同一行会差 4px，看着不齐。 -->
     <div class="mb-4 flex flex-wrap items-center gap-2">
       <div class="w-64 max-w-full">
         <VbenSegmented v-model="filter" :tabs="FILTER_OPTIONS" />
       </div>
-      <VbenButton
-        :loading="loading"
-        size="sm"
-        variant="outline"
-        @click="refresh"
-      >
+      <VbenButton :loading="loading" variant="outline" @click="refresh">
         刷新
       </VbenButton>
       <span class="flex-1"></span>
-      <VbenButton
-        v-if="items.length > 0"
-        size="sm"
-        variant="secondary"
-        @click="clearAll"
-      >
+      <VbenButton v-if="items.length > 0" variant="secondary" @click="clearAll">
         全部已读
       </VbenButton>
     </div>
