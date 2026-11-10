@@ -19,9 +19,10 @@ const POLL_INTERVAL = 60_000;
 const base = import.meta.env.BASE_URL;
 
 const AVATARS = {
-  // 告警：红色三角；待办：蓝色清单。两张都是 public/ 下的静态图，不依赖外网。
-  alert: `${base}notification-alert.svg`,
-  todo: `${base}notification-todo.svg`,
+  // 告警：红色感叹号圆环（warn）；待办：蓝色加号圆环（todo）。
+  // 两张都是 public/svg/ 下的静态图，不依赖外网。
+  alert: `${base}svg/warn.svg`,
+  todo: `${base}svg/todo.svg`,
 } as const;
 
 // 模块级状态：顶栏铃铛和「通知中心」页共用同一份，不会各拉各的、各标各的。
