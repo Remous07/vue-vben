@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { NotificationItem } from '@vben/layouts';
 
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { AuthenticationLoginExpiredModal } from '@vben/common-ui';
@@ -15,10 +15,26 @@ import {
 import { preferences, usePreferences } from '@vben/preferences';
 import { useAccessStore, useUserStore } from '@vben/stores';
 
+import {
+  startNotificationPolling,
+  stopNotificationPolling,
+  useNotifications,
+} from '#/composables/use-notifications';
 import { useAuthStore } from '#/store';
 import LoginForm from '#/views/_core/authentication/login.vue';
 
-const notifications = ref<NotificationItem[]>([]);
+// 铃铛的数据源：后端现算的告警 + 待办，60 秒轮询一次（页面不可见时跳过）。
+const {
+  clearAll,
+  dismiss,
+  markRead,
+  showDot,
+  widgetItems: notifications,
+} = useNotifications();
+
+// 轮询的生命周期跟着布局走：登出/切到登录页时布局卸载，计时器随之停掉。
+onMounted(startNotificationPolling);
+onBeforeUnmount(stopNotificationPolling);
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -26,9 +42,6 @@ const authStore = useAuthStore();
 const accessStore = useAccessStore();
 const { destroyWatermark, updateWatermark } = useWatermark();
 const { isDark } = usePreferences();
-const showDot = computed(() =>
-  notifications.value.some((item) => !item.isRead),
-);
 
 const menus = computed(() => [
   {
@@ -48,26 +61,9 @@ async function handleLogout() {
   await authStore.logout(false);
 }
 
-function handleNoticeClear() {
-  notifications.value = [];
+function viewAll() {
+  router.push('/notifications');
 }
-
-function markRead(id: number | string) {
-  const item = notifications.value.find((item) => item.id === id);
-  if (item) {
-    item.isRead = true;
-  }
-}
-
-function remove(id: number | string) {
-  notifications.value = notifications.value.filter((item) => item.id !== id);
-}
-
-function handleMakeAll() {
-  notifications.value.forEach((item) => (item.isRead = true));
-}
-
-const viewAll = () => {};
 
 const handleClick = (item: NotificationItem) => {
   // 如果通知项有链接，点击时跳转
@@ -156,10 +152,10 @@ watch(
       <Notification
         :dot="showDot"
         :notifications="notifications"
-        @clear="handleNoticeClear"
-        @read="(item) => item.id && markRead(item.id)"
-        @remove="(item) => item.id && remove(item.id)"
-        @make-all="handleMakeAll"
+        @clear="clearAll"
+        @read="(item) => item.id && markRead(String(item.id))"
+        @remove="(item) => item.id && dismiss(String(item.id))"
+        @make-all="clearAll"
         @on-click="handleClick"
         @view-all="viewAll"
       />

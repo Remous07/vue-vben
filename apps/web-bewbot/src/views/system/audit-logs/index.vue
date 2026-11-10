@@ -8,6 +8,7 @@ import type {
 } from '#/api/core';
 
 import { computed, h, onMounted, ref } from 'vue';
+import { useRoute } from 'vue-router';
 
 import { EllipsisText, Page, useVbenDrawer } from '@vben/common-ui';
 import { IconifyIcon } from '@vben/icons';
@@ -56,6 +57,10 @@ import { actionColor } from './action-color';
 import { rangeBound } from './range-bound';
 
 defineOptions({ name: 'AuditLogs' });
+
+// 通知里的「运行日志 ERROR」会带 ?tab=runtime 跳过来，直接落到对应标签页。
+const route = useRoute();
+const activeTab = ref(route.query.tab === 'runtime' ? 'runtime' : 'operations');
 
 const { isDark } = usePreferences();
 
@@ -734,7 +739,7 @@ onMounted(() => {
       </div>
     </Card>
 
-    <Tabs default-active-key="operations">
+    <Tabs v-model:active-key="activeTab">
       <!-- Operation records -->
       <Tabs.TabPane key="operations" tab="操作记录">
         <div
