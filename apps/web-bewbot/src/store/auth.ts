@@ -17,6 +17,7 @@ import {
   getUserInfoApi,
   loginApi,
   loginTotpApi,
+  loginTotpEnableApi,
   logoutApi,
   registerApi,
 } from '#/api';
@@ -57,6 +58,13 @@ export const useAuthStore = defineStore('auth', () => {
       if (response.totpPending) {
         totpTempToken.value = response.tempToken;
         await router.push('/auth/totp-verify');
+        return { userInfo: null };
+      }
+
+      // 高权限账号没开 TOTP：后端只发了临时令牌，必须先完成设置才拿得到会话
+      if (response.totpSetupRequired) {
+        totpTempToken.value = response.tempToken;
+        await router.push('/auth/totp-setup');
         return { userInfo: null };
       }
 
@@ -161,33 +169,53 @@ export const useAuthStore = defineStore('auth', () => {
     registerLoading.value = false;
   }
 
+  /** 拿到正式令牌后的公共收尾：存令牌、拉用户信息与权限、进首页。 */
+  async function finishLogin(accessToken: string) {
+    accessStore.setAccessToken(accessToken);
+    totpTempToken.value = '';
+
+    const [fetchUserInfoResult, accessCodes] = await Promise.all([
+      fetchUserInfo(),
+      getAccessCodesApi(),
+    ]);
+
+    const userInfo = fetchUserInfoResult;
+    userStore.setUserInfo(userInfo);
+    accessStore.setAccessCodes(accessCodes);
+
+    await router.push(userInfo.homePath || preferences.app.defaultHomePath);
+
+    if (userInfo?.realName) {
+      notification.success({
+        description: `${$t('authentication.loginSuccessDesc')}:${userInfo?.realName}`,
+        duration: 3,
+        message: $t('authentication.loginSuccess'),
+      });
+    }
+  }
+
   async function authLoginTotp(totpCode: string) {
     try {
       loginLoading.value = true;
       const { accessToken } = await loginTotpApi(totpTempToken.value, totpCode);
-
       if (accessToken) {
-        accessStore.setAccessToken(accessToken);
-        totpTempToken.value = '';
+        await finishLogin(accessToken);
+      }
+    } finally {
+      loginLoading.value = false;
+    }
+  }
 
-        const [fetchUserInfoResult, accessCodes] = await Promise.all([
-          fetchUserInfo(),
-          getAccessCodesApi(),
-        ]);
-
-        const userInfo = fetchUserInfoResult;
-        userStore.setUserInfo(userInfo);
-        accessStore.setAccessCodes(accessCodes);
-
-        await router.push(userInfo.homePath || preferences.app.defaultHomePath);
-
-        if (userInfo?.realName) {
-          notification.success({
-            description: `${$t('authentication.loginSuccessDesc')}:${userInfo?.realName}`,
-            duration: 3,
-            message: $t('authentication.loginSuccess'),
-          });
-        }
+  /** 高权限账号强制设置 TOTP：验证成功后直接换到正式会话。 */
+  async function authTotpEnable(totpCode: string) {
+    try {
+      loginLoading.value = true;
+      const { accessToken } = await loginTotpEnableApi(
+        totpTempToken.value,
+        totpCode,
+      );
+      if (accessToken) {
+        await finishLogin(accessToken);
       }
     } finally {
       loginLoading.value = false;
@@ -199,6 +227,7 @@ export const useAuthStore = defineStore('auth', () => {
     authLogin,
     authLoginTotp,
     authRegister,
+    authTotpEnable,
     fetchUserInfo,
     loginLoading,
     logout,

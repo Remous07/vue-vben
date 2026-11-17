@@ -13,6 +13,13 @@ export namespace AuthApi {
 
   export interface LoginResult {
     accessToken: string;
+    /** 注销冷静期内登录，自动取消了注销 */
+    deletionCancelled?: boolean;
+    /** 开了 TOTP：先去输码 */
+    tempToken?: string;
+    totpPending?: boolean;
+    /** 高权限但没开 TOTP：只发了临时令牌，必须先完成设置 */
+    totpSetupRequired?: boolean;
   }
 
   export interface RegisterParams {
@@ -40,6 +47,22 @@ export async function loginApi(data: AuthApi.LoginParams) {
 /** TOTP 二次验证登录 */
 export async function loginTotpApi(tempToken: string, totpCode: string) {
   return requestClient.post<AuthApi.LoginResult>('/auth/login-totp', {
+    temp_token: tempToken,
+    totp_code: totpCode,
+  });
+}
+
+/** 强制设置 TOTP：用登录时发的临时令牌换密钥 */
+export async function loginTotpSetupApi(tempToken: string) {
+  return requestClient.post<{ secret: string; uri: string }>(
+    '/auth/totp-setup',
+    { temp_token: tempToken },
+  );
+}
+
+/** 强制设置 TOTP：验证一次码，启用并换回正式会话 */
+export async function loginTotpEnableApi(tempToken: string, totpCode: string) {
+  return requestClient.post<AuthApi.LoginResult>('/auth/totp-enable', {
     temp_token: tempToken,
     totp_code: totpCode,
   });

@@ -64,6 +64,12 @@ const coreRoutes: RouteRecordRaw[] = [
         meta: { title: '两步验证' },
       },
       {
+        name: 'TotpSetupRequired',
+        path: 'totp-setup',
+        component: () => import('#/views/_core/authentication/totp-setup.vue'),
+        meta: { title: '设置两步验证' },
+      },
+      {
         name: 'ResetPassword',
         path: 'reset-password',
         component: () =>
