@@ -837,6 +837,10 @@ onMounted(async () => {
                   </template>
                 </Result>
               </template>
+              <!-- 通行密钥与身份验证器并列，都是第二因子 -->
+              <div style="text-align: center">
+                <RouterLink to="/passkeys">管理通行密钥</RouterLink>
+              </div>
             </Card>
           </Col>
         </Row>

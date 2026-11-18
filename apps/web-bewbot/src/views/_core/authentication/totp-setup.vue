@@ -53,6 +53,14 @@ onMounted(async () => {
   }
 });
 
+function backToLoginIfFatal(error: unknown) {
+  const status = (error as { response?: { status?: number } })?.response
+    ?.status;
+  if (status === 401 || status === 403 || status === 429) {
+    router.push('/auth/login');
+  }
+}
+
 async function handleSubmit() {
   const { valid } = await formApi.validate();
   if (!valid) return;
@@ -64,11 +72,19 @@ async function handleSubmit() {
   } catch (error) {
     // 失败文案由拦截器按后端 detail 弹出（码错误 / 尝试次数过多…）。只有「这次
     // 登录凭证已经没用」的情况才回登录页：401/403 令牌失效，429 被退避。
-    const status = (error as { response?: { status?: number } })?.response
-      ?.status;
-    if (status === 401 || status === 403 || status === 429) {
-      await router.push('/auth/login');
-    }
+    backToLoginIfFatal(error);
+  } finally {
+    loading.value = false;
+  }
+}
+
+/** 用通行密钥满足强制策略：注册成功即完成第二因子，直接进面板。 */
+async function handlePasskey() {
+  loading.value = true;
+  try {
+    await authStore.authPasskeyRegister('通行密钥');
+  } catch (error) {
+    backToLoginIfFatal(error);
   } finally {
     loading.value = false;
   }
@@ -79,10 +95,33 @@ async function handleSubmit() {
   <div class="flex h-full items-center justify-center p-6">
     <div class="w-full max-w-md">
       <div class="mb-6 text-center">
-        <h2 class="text-xl font-semibold">设置两步验证</h2>
+        <h2 class="text-xl font-semibold">设置第二因子</h2>
         <p class="mt-2 text-sm text-gray-500">
-          你的账号拥有较高权限，必须先绑定身份验证器才能继续使用。
+          你的账号拥有较高权限，必须先绑定身份验证器或通行密钥才能继续使用。
         </p>
+      </div>
+
+      <div class="border-border mb-6 rounded-lg border p-4">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <p class="font-medium">使用通行密钥</p>
+            <p class="text-xs text-gray-500">
+              指纹、面容或设备 PIN，不怕钓鱼，也不用抄验证码
+            </p>
+          </div>
+          <VbenButton
+            :loading="loading"
+            class="shrink-0"
+            variant="outline"
+            @click="handlePasskey"
+          >
+            注册
+          </VbenButton>
+        </div>
+      </div>
+
+      <div class="mb-3 text-center text-xs text-gray-400">
+        或者使用身份验证器
       </div>
 
       <div v-if="fetching" class="py-10 text-center text-sm text-gray-500">

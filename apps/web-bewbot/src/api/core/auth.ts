@@ -11,15 +11,29 @@ export namespace AuthApi {
     remember_me?: boolean;
   }
 
+  export interface SecondFactorMethods {
+    passkey: boolean;
+    totp: boolean;
+  }
+
   export interface LoginResult {
     accessToken: string;
     /** 注销冷静期内登录，自动取消了注销 */
     deletionCancelled?: boolean;
-    /** 开了 TOTP：先去输码 */
+    /** 第二因子待完成：用临时令牌去 /auth/totp-verify */
+    secondFactorPending?: boolean;
+    /** 高权限且两种第二因子都没有：用临时令牌去 /auth/totp-setup */
+    secondFactorSetupRequired?: boolean;
+    /** 该账号可用的第二因子 */
+    methods?: SecondFactorMethods;
     tempToken?: string;
-    totpPending?: boolean;
-    /** 高权限但没开 TOTP：只发了临时令牌，必须先完成设置 */
-    totpSetupRequired?: boolean;
+  }
+
+  export interface PasskeyItem {
+    id: number;
+    name: string;
+    created_at: null | string;
+    last_used_at: null | string;
   }
 
   export interface RegisterParams {
@@ -49,6 +63,60 @@ export async function loginTotpApi(tempToken: string, totpCode: string) {
   return requestClient.post<AuthApi.LoginResult>('/auth/login-totp', {
     temp_token: tempToken,
     totp_code: totpCode,
+  });
+}
+
+// ── 通行密钥（WebAuthn） ──────────────────────────────
+//
+// 选项与断言都是浏览器侧的 JSON 结构，形状由 @simplewebauthn/browser 定义，
+// 这里不重复建模——传 unknown，交给库去消解。
+
+/** 注册通行密钥：options（完整会话或强制设置时的临时令牌） */
+export async function passkeyRegisterOptionsApi(tempToken?: string) {
+  return requestClient.post<unknown>('/auth/passkey/register/options', {
+    temp_token: tempToken,
+  });
+}
+
+/** 注册通行密钥：校验断言。强制设置时会顺带返回 accessToken */
+export async function passkeyRegisterVerifyApi(
+  credential: unknown,
+  tempToken?: string,
+  name?: string,
+) {
+  return requestClient.post<AuthApi.LoginResult & { verified: boolean }>(
+    '/auth/passkey/register/verify',
+    { credential, name, temp_token: tempToken },
+  );
+}
+
+/** 登录：生成 options（需临时令牌） */
+export async function passkeyLoginOptionsApi(tempToken: string) {
+  return requestClient.post<unknown>('/auth/passkey/login/options', {
+    temp_token: tempToken,
+  });
+}
+
+/** 登录：校验断言，换正式会话 */
+export async function passkeyLoginVerifyApi(
+  credential: unknown,
+  tempToken: string,
+) {
+  return requestClient.post<AuthApi.LoginResult>('/auth/passkey/login/verify', {
+    credential,
+    temp_token: tempToken,
+  });
+}
+
+/** 已登录用户的通行密钥列表 */
+export async function listPasskeysApi() {
+  return requestClient.get<AuthApi.PasskeyItem[]>('/account/passkeys');
+}
+
+/** 删除通行密钥（需当前密码） */
+export async function deletePasskeyApi(id: number, password: string) {
+  return requestClient.delete(`/account/passkeys/${id}`, {
+    data: { password },
   });
 }
 

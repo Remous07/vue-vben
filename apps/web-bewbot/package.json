@@ -14,6 +14,7 @@
     "#/*": "./src/*"
   },
   "dependencies": {
+    "@simplewebauthn/browser": "^14.0.0",
     "@vben-core/form-ui": "workspace:*",
     "@vben-core/shadcn-ui": "workspace:*",
     "@vben/access": "workspace:*",

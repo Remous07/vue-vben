@@ -1,3 +1,8 @@
+import type {
+  PublicKeyCredentialCreationOptionsJSON,
+  PublicKeyCredentialRequestOptionsJSON,
+} from '@simplewebauthn/browser';
+
 import type { Recordable, UserInfo } from '@vben/types';
 
 import type { AuthApi } from '#/api';
@@ -9,6 +14,10 @@ import { LOGIN_PATH } from '@vben/constants';
 import { preferences } from '@vben/preferences';
 import { resetAllStores, useAccessStore, useUserStore } from '@vben/stores';
 
+import {
+  startAuthentication,
+  startRegistration,
+} from '@simplewebauthn/browser';
 import { notification } from 'ant-design-vue';
 import { defineStore } from 'pinia';
 
@@ -19,6 +28,10 @@ import {
   loginTotpApi,
   loginTotpEnableApi,
   logoutApi,
+  passkeyLoginOptionsApi,
+  passkeyLoginVerifyApi,
+  passkeyRegisterOptionsApi,
+  passkeyRegisterVerifyApi,
   registerApi,
 } from '#/api';
 import { $t } from '#/locales';
@@ -44,6 +57,11 @@ export const useAuthStore = defineStore('auth', () => {
   const loginLoading = ref(false);
   const registerLoading = ref(false);
   const totpTempToken = ref('');
+  // 这次登录可用的第二因子（由后端在登录响应里给出）
+  const secondFactorMethods = ref<AuthApi.SecondFactorMethods>({
+    passkey: false,
+    totp: false,
+  });
 
   async function authLogin(
     params: Recordable<any>,
@@ -54,16 +72,21 @@ export const useAuthStore = defineStore('auth', () => {
       loginLoading.value = true;
       const response: any = await loginApi(params);
 
-      // TOTP required: store temp token, redirect to TOTP page
-      if (response.totpPending) {
+      // 第二因子待完成：临时令牌 + 可用方式，交给验证页
+      if (response.secondFactorPending) {
         totpTempToken.value = response.tempToken;
+        secondFactorMethods.value = response.methods ?? {
+          passkey: false,
+          totp: true,
+        };
         await router.push('/auth/totp-verify');
         return { userInfo: null };
       }
 
-      // 高权限账号没开 TOTP：后端只发了临时令牌，必须先完成设置才拿得到会话
-      if (response.totpSetupRequired) {
+      // 高权限且两种第二因子都没有：必须先完成设置才拿得到会话
+      if (response.secondFactorSetupRequired) {
         totpTempToken.value = response.tempToken;
+        secondFactorMethods.value = { passkey: false, totp: false };
         await router.push('/auth/totp-setup');
         return { userInfo: null };
       }
@@ -206,6 +229,54 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /** 用通行密钥完成第二因子。临时令牌来自登录响应。 */
+  async function authPasskeyLogin() {
+    try {
+      loginLoading.value = true;
+      const options = (await passkeyLoginOptionsApi(
+        totpTempToken.value,
+      )) as PublicKeyCredentialRequestOptionsJSON;
+      const credential = await startAuthentication({ optionsJSON: options });
+      const { accessToken } = await passkeyLoginVerifyApi(
+        credential,
+        totpTempToken.value,
+      );
+      if (accessToken) {
+        await finishLogin(accessToken);
+      }
+    } finally {
+      loginLoading.value = false;
+    }
+  }
+
+  /**
+   * 注册一枚通行密钥。
+   *
+   * 两处调用：个人中心（完整会话，注册完返回 verified）与强制设置页（临时令牌，
+   * 注册成功即完成第二因子，后端直接回 accessToken）。
+   */
+  async function authPasskeyRegister(name?: string) {
+    try {
+      loginLoading.value = true;
+      const tempToken = totpTempToken.value || undefined;
+      const options = (await passkeyRegisterOptionsApi(
+        tempToken,
+      )) as PublicKeyCredentialCreationOptionsJSON;
+      const credential = await startRegistration({ optionsJSON: options });
+      const result = await passkeyRegisterVerifyApi(
+        credential,
+        tempToken,
+        name,
+      );
+      if (result.accessToken) {
+        await finishLogin(result.accessToken);
+      }
+      return result;
+    } finally {
+      loginLoading.value = false;
+    }
+  }
+
   /** 高权限账号强制设置 TOTP：验证成功后直接换到正式会话。 */
   async function authTotpEnable(totpCode: string) {
     try {
@@ -226,12 +297,15 @@ export const useAuthStore = defineStore('auth', () => {
     $reset,
     authLogin,
     authLoginTotp,
+    authPasskeyLogin,
+    authPasskeyRegister,
     authRegister,
     authTotpEnable,
     fetchUserInfo,
     loginLoading,
     logout,
     registerLoading,
+    secondFactorMethods,
     totpTempToken,
   };
 });
