@@ -5,7 +5,10 @@ import { useRouter } from 'vue-router';
 import { useVbenForm, z } from '@vben-core/form-ui';
 import { VbenButton } from '@vben-core/shadcn-ui';
 
+import { message } from 'ant-design-vue';
+
 import { useAuthStore } from '#/store';
+import { describePasskeyError, passkeySupported } from '#/utils/passkey';
 
 defineOptions({ name: 'TotpVerify' });
 
@@ -15,6 +18,10 @@ const loading = ref(false);
 
 // 后端在登录响应里告知这个账号能用哪些第二因子；两者都有时两个入口都显示。
 const methods = computed(() => authStore.secondFactorMethods);
+// 浏览器不支持时按钮点下去只会抛异常，干脆不显示。
+const passkeyAvailable = computed(
+  () => methods.value.passkey && passkeySupported(),
+);
 
 const [Form, formApi] = useVbenForm({
   commonConfig: { hideLabel: true, hideRequiredMark: true },
@@ -65,6 +72,12 @@ async function handlePasskey() {
   try {
     await authStore.authPasskeyLogin();
   } catch (error) {
+    // 用户取消系统弹窗、超时、设备不支持……这些不是 HTTP 错误，
+    // 拦截器看不到，必须自己给一句人话。
+    const text = describePasskeyError(error);
+    if (text) {
+      message.warning(text);
+    }
     backToLoginIfFatal(error);
   } finally {
     loading.value = false;
@@ -82,10 +95,13 @@ async function handlePasskey() {
         </p>
       </div>
 
-      <template v-if="methods.passkey">
+      <template v-if="passkeyAvailable">
         <VbenButton :loading="loading" class="w-full" @click="handlePasskey">
           使用通行密钥
         </VbenButton>
+        <p class="text-muted-foreground mt-2 text-center text-xs">
+          用指纹、面容或设备 PIN 完成验证
+        </p>
       </template>
 
       <template v-if="methods.passkey && methods.totp">
@@ -106,6 +122,15 @@ async function handlePasskey() {
           验证
         </VbenButton>
       </template>
+
+      <div
+        v-if="methods.passkey && !passkeyAvailable"
+        class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300"
+      >
+        这个账号用通行密钥作为第二因子，但当前浏览器不支持通行密钥（需要 HTTPS
+        或
+        localhost）。请换一个浏览器或设备；如果只有这一种方式，需要联系另一位管理员重置第二因子。
+      </div>
 
       <div class="mt-4 text-center text-sm">
         <a

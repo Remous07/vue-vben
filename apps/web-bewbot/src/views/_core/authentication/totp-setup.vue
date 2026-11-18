@@ -5,10 +5,11 @@ import { useRouter } from 'vue-router';
 import { useVbenForm, z } from '@vben-core/form-ui';
 import { VbenButton } from '@vben-core/shadcn-ui';
 
-import { QRCode } from 'ant-design-vue';
+import { message, QRCode } from 'ant-design-vue';
 
 import { loginTotpSetupApi } from '#/api';
 import { useAuthStore } from '#/store';
+import { describePasskeyError, passkeySupported } from '#/utils/passkey';
 
 defineOptions({ name: 'TotpSetupRequired' });
 
@@ -17,6 +18,7 @@ const router = useRouter();
 const loading = ref(false);
 const fetching = ref(true);
 const setup = ref<null | { secret: string; uri: string }>(null);
+const supported = passkeySupported();
 
 const [Form, formApi] = useVbenForm({
   commonConfig: { hideLabel: true, hideRequiredMark: true },
@@ -84,6 +86,11 @@ async function handlePasskey() {
   try {
     await authStore.authPasskeyRegister('通行密钥');
   } catch (error) {
+    // 取消系统弹窗、超时、设备不支持——这些不是 HTTP 错误，拦截器看不到。
+    const text = describePasskeyError(error);
+    if (text) {
+      message.warning(text);
+    }
     backToLoginIfFatal(error);
   } finally {
     loading.value = false;
@@ -103,13 +110,18 @@ async function handlePasskey() {
 
       <div class="border-border mb-6 rounded-lg border p-4">
         <div class="flex items-center justify-between gap-3">
-          <div>
+          <div class="min-w-0">
             <p class="font-medium">使用通行密钥</p>
-            <p class="text-xs text-gray-500">
-              指纹、面容或设备 PIN，不怕钓鱼，也不用抄验证码
+            <p class="mt-1 text-xs text-gray-500">
+              {{
+                supported
+                  ? '指纹、面容或设备 PIN，不怕钓鱼，也不用抄验证码'
+                  : '当前浏览器不支持（需要 HTTPS 或 localhost），请使用右侧的身份验证器'
+              }}
             </p>
           </div>
           <VbenButton
+            :disabled="!supported"
             :loading="loading"
             class="shrink-0"
             variant="outline"
