@@ -100,7 +100,7 @@ async function handlePasskey() {
           使用通行密钥
         </VbenButton>
         <p class="text-muted-foreground mt-2 text-center text-xs">
-          用指纹、面容或设备 PIN 完成验证
+          使用设备内置的指纹、面容或设备 PIN 完成验证
         </p>
       </template>
 

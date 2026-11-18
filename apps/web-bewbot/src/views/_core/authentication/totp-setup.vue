@@ -115,8 +115,8 @@ async function handlePasskey() {
             <p class="mt-1 text-xs text-gray-500">
               {{
                 supported
-                  ? '指纹、面容或设备 PIN，不怕钓鱼，也不用抄验证码'
-                  : '当前浏览器不支持（需要 HTTPS 或 localhost），请使用右侧的身份验证器'
+                  ? '通过设备内置的指纹、面容或设备 PIN 完成验证。凭据与本站域名绑定，可防止钓鱼，无需手动输入验证码。'
+                  : '当前浏览器不支持通行密钥（需要 HTTPS 或 localhost），请改用身份验证器。'
               }}
             </p>
           </div>

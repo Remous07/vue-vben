@@ -88,7 +88,7 @@ onMounted(load);
 
 <template>
   <Page
-    description="用指纹、面容或设备 PIN 完成第二因子验证，不怕钓鱼，也不用抄验证码。"
+    description="使用设备内置的身份验证（指纹、面容或设备 PIN）完成第二因子验证。"
     title="通行密钥"
   >
     <!-- 大屏上铺满整行会显得很空：内容限宽，列表收进一张卡片 -->
@@ -109,7 +109,7 @@ onMounted(load);
             <div class="min-w-0">
               <p class="font-medium">已添加的通行密钥</p>
               <p class="text-muted-foreground mt-0.5 text-xs">
-                私钥留在设备里，服务器只保存公钥
+                私钥保留在设备中，服务器仅保存公钥
               </p>
             </div>
             <Button
@@ -159,7 +159,7 @@ onMounted(load);
             </div>
             <p class="text-sm font-medium">还没有添加通行密钥</p>
             <p class="text-muted-foreground text-xs">
-              添加后，登录时可以用指纹或面容代替验证码
+              添加后，登录时可通过通行密钥完成第二因子验证
             </p>
           </div>
         </div>
@@ -175,8 +175,7 @@ onMounted(load);
       @ok="confirmAdd"
     >
       <div class="text-muted-foreground mb-3 text-sm">
-        点击「继续」后，浏览器会要求你用指纹、面容或设备 PIN
-        确认；确认完成即添加成功。
+        点击「继续」后，浏览器将调用设备内置的身份验证进行确认；确认完成后即添加成功。
       </div>
       <Input
         v-model:value="addName"
