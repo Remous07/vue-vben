@@ -1,16 +1,16 @@
 <script lang="ts" setup>
 import type { AuthApi } from '#/api';
 
-import { computed, onMounted, ref } from 'vue';
+import { onMounted, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
 import { IconifyIcon } from '@vben/icons';
 
-import { Button, Empty, Input, message, Modal, Spin } from 'ant-design-vue';
+import { Button, Input, message, Modal, Spin } from 'ant-design-vue';
 
 import { deletePasskeyApi, listPasskeysApi } from '#/api';
 import { useAuthStore } from '#/store';
-import { formatBeijingDateTime } from '#/utils/datetime';
+import { formatBeijingShort } from '#/utils/datetime';
 import { describePasskeyError, passkeySupported } from '#/utils/passkey';
 
 defineOptions({ name: 'Passkeys' });
@@ -30,8 +30,6 @@ const deleteTarget = ref<AuthApi.PasskeyItem | null>(null);
 const deletePassword = ref('');
 const deleteVisible = ref(false);
 const deleting = ref(false);
-
-const canAdd = computed(() => supported);
 
 async function load() {
   loading.value = true;
@@ -93,65 +91,80 @@ onMounted(load);
     description="用指纹、面容或设备 PIN 完成第二因子验证，不怕钓鱼，也不用抄验证码。"
     title="通行密钥"
   >
-    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-      <p class="text-muted-foreground text-sm">
-        通行密钥保存在你的设备或密码管理器里，服务器只保存公钥。
-      </p>
-      <Button
-        :disabled="!canAdd"
-        :loading="adding"
-        type="primary"
-        @click="openAdd"
+    <!-- 大屏上铺满整行会显得很空：内容限宽，列表收进一张卡片 -->
+    <div class="max-w-3xl">
+      <div
+        v-if="!supported"
+        class="border-border text-muted-foreground mb-3 rounded-lg border p-3 text-sm"
       >
-        <IconifyIcon class="mr-1" icon="lucide:plus" />
-        添加通行密钥
-      </Button>
-    </div>
-
-    <div
-      v-if="!supported"
-      class="border-border text-muted-foreground mb-4 rounded-lg border p-3 text-sm"
-    >
-      当前浏览器不支持通行密钥（需要 HTTPS 或 localhost，且浏览器实现了
-      WebAuthn）。你仍然可以使用身份验证器完成两步验证。
-    </div>
-
-    <Spin :spinning="loading">
-      <div v-if="items.length === 0" class="py-16 text-center">
-        <Empty description="还没有添加通行密钥">
-          <p class="text-muted-foreground mb-4 text-xs">
-            添加之后，登录时可以用指纹或面容代替验证码。
-          </p>
-        </Empty>
+        当前浏览器不支持通行密钥（需要 HTTPS 或
+        localhost）。你仍然可以使用身份验证器完成两步验证。
       </div>
 
-      <div v-else class="flex flex-col gap-2">
-        <div
-          v-for="item in items"
-          :key="item.id"
-          class="border-border bg-card flex items-start gap-3 rounded-lg border p-3"
-        >
+      <Spin :spinning="loading">
+        <div class="border-border bg-card overflow-hidden rounded-lg border">
           <div
-            class="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-full"
+            class="border-border flex items-center justify-between gap-3 border-b px-4 py-3"
           >
-            <IconifyIcon class="size-4" icon="lucide:key-round" />
+            <div class="min-w-0">
+              <p class="font-medium">已添加的通行密钥</p>
+              <p class="text-muted-foreground mt-0.5 text-xs">
+                私钥留在设备里，服务器只保存公钥
+              </p>
+            </div>
+            <Button
+              :disabled="!supported"
+              :loading="adding"
+              size="small"
+              type="primary"
+              @click="openAdd"
+            >
+              <IconifyIcon class="mr-1" icon="lucide:plus" />
+              添加
+            </Button>
           </div>
-          <div class="min-w-0 flex-1">
-            <p class="font-medium">{{ item.name }}</p>
-            <p class="text-muted-foreground mt-1 text-xs">
-              添加于 {{ formatBeijingDateTime(item.created_at) }}
-              <template v-if="item.last_used_at">
-                · 最近使用 {{ formatBeijingDateTime(item.last_used_at) }}
-              </template>
-              <template v-else>· 尚未使用</template>
+
+          <template v-if="items.length > 0">
+            <div
+              v-for="item in items"
+              :key="item.id"
+              class="border-border flex items-center gap-3 border-b px-4 py-3 last:border-b-0"
+            >
+              <div
+                class="bg-primary/10 text-primary flex size-8 shrink-0 items-center justify-center rounded-full"
+              >
+                <IconifyIcon class="size-4" icon="lucide:key-round" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-medium">{{ item.name }}</p>
+                <p class="text-muted-foreground mt-0.5 text-xs">
+                  {{ formatBeijingShort(item.created_at) }} 添加
+                  <template v-if="item.last_used_at">
+                    · {{ formatBeijingShort(item.last_used_at) }} 使用过
+                  </template>
+                  <template v-else>· 尚未使用</template>
+                </p>
+              </div>
+              <Button danger size="small" type="link" @click="askDelete(item)">
+                删除
+              </Button>
+            </div>
+          </template>
+
+          <div v-else class="flex flex-col items-center gap-1 px-4 py-10">
+            <div
+              class="bg-primary/10 text-primary mb-1 flex size-10 items-center justify-center rounded-full"
+            >
+              <IconifyIcon class="size-5" icon="lucide:key-round" />
+            </div>
+            <p class="text-sm font-medium">还没有添加通行密钥</p>
+            <p class="text-muted-foreground text-xs">
+              添加后，登录时可以用指纹或面容代替验证码
             </p>
           </div>
-          <Button danger size="small" type="link" @click="askDelete(item)">
-            删除
-          </Button>
         </div>
-      </div>
-    </Spin>
+      </Spin>
+    </div>
 
     <!-- 添加 -->
     <Modal
