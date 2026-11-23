@@ -4,6 +4,10 @@ export default defineConfig(async () => {
   return {
     application: {},
     vite: {
+      resolve: {
+        // 与上游 web-antd 一致：构建产物里只保留一份 vue-router 实例
+        dedupe: ['vue-router'],
+      },
       server: {
         proxy: {
           '/api': {
